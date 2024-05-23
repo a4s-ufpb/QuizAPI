@@ -40,5 +40,5 @@ jobs:
           script: |
             cd Quiz-A4S
             docker rm -f container-quiz-api
-            docker pull a4sufpb/quizapi
+            docker rmi a4sufpb/quizapi
             docker compose up -d
