@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/alternative")
+@RequestMapping("/v1/alternative")
 @Tag(name = "Alternative", description = "Alternatives of Questions")
 public class AlternativeController {
     private AlternativeService service;

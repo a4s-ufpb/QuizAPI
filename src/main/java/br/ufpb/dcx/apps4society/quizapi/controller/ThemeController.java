@@ -24,7 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/theme")
+@RequestMapping("/v1/theme")
 @Tag(name = "Theme", description = "Themes of Questions")
 public class ThemeController {
     private ThemeService service;

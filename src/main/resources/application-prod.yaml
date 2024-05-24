@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    username: ${PROD_USER}
-    url: jdbc:postgresql://${PROD_HOST}:${PROD_PORT}/${PROD_DB}
-    password: ${PROD_PASSWORD}
+    username: postgres
+    url: jdbc:postgresql://api.observatorioturismopb.com.br:5555/quiz_api
+    password: MnyQhDmpV698d64jvQt5
   jpa:
     hibernate:
       ddl-auto: update

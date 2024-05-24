@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/score")
+@RequestMapping("/v1/score")
 @Tag(name = "Score", description = "Score of Quiz")
 public class ScoreController {
     private final ScoreService scoreService;

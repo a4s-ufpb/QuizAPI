@@ -22,7 +22,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/response")
+@RequestMapping("/v1/response")
 @Tag(name = "Response", description = "Responses of Users")
 public class ResponseController {
     private ResponseService service;

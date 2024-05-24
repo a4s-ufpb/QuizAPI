@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/user")
+@RequestMapping("/v1/user")
 @Tag(name = "User", description = "Users of Quiz")
 public class UserController {
     private UserService userService;

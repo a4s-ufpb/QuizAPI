@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/question")
+@RequestMapping("/v1/question")
 @Tag(name = "Question", description = "Questions of Quiz")
 public class QuestionController {
     private QuestionService service;
