@@ -33,11 +33,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> {
                     request.requestMatchers("/", "/swagger-resources/**", "/swagger-ui/**", "/v3/api-docs/**", "/h2/**").permitAll();
-                    request.requestMatchers(HttpMethod.GET,"/api/v1/theme/**").permitAll();
-                    request.requestMatchers(HttpMethod.GET, "/api/v1/question/quiz/**").permitAll();
-                    request.requestMatchers(HttpMethod.POST,"/api/v1/user/**").permitAll();
-                    request.requestMatchers(HttpMethod.GET, "/api/v1/theme/creator").authenticated();
-                    request.requestMatchers(HttpMethod.GET, "/api/v1/response").hasRole("ADMIN").anyRequest().authenticated();
+                    request.requestMatchers(HttpMethod.GET,"/v1/theme/**").permitAll();
+                    request.requestMatchers(HttpMethod.GET, "/v1/question/quiz/**").permitAll();
+                    request.requestMatchers(HttpMethod.POST,"/v1/user/**").permitAll();
+                    request.requestMatchers(HttpMethod.GET, "/v1/theme/creator").authenticated();
+                    request.requestMatchers(HttpMethod.GET, "/v1/response").hasRole("ADMIN").anyRequest().authenticated();
                 })
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
