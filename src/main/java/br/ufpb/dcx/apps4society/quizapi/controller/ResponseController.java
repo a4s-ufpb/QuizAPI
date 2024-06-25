@@ -83,9 +83,10 @@ public class ResponseController {
                                                                             @RequestParam(value = "size", defaultValue = "20") Integer size,
                                                                             @RequestParam(value = "date", defaultValue = "") LocalDate date,
                                                                             @RequestParam(value = "questionId", defaultValue = "") Long questionId,
+                                                                            @RequestParam(value = "name", defaultValue = "") String name,
                                                                             @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findResponsesByQuestionCreator(pageable,token, date, questionId));
+        return ResponseEntity.ok(service.findResponsesByQuestionCreator(pageable,token, date, questionId, name));
     }
 
     @Operation(tags = "Response", summary = "Remove Response", responses ={

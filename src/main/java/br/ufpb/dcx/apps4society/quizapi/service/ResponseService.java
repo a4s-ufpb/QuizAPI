@@ -92,17 +92,21 @@ public class ResponseService {
         return responses.map(Response::entityToResponse);
     }
 
-    public Page<ResponseDTO> findResponsesByQuestionCreator(Pageable pageable, String token, LocalDate date, Long questionId){
+    public Page<ResponseDTO> findResponsesByQuestionCreator(Pageable pageable, String token, LocalDate date, Long questionId, String name){
         User loggedUser = findUserByToken(token);
 
         Page<Response> responses;
 
-        if (date != null && questionId == null){
+        if (date != null && questionId == null && name == null){
             responses = responseRepository.findByDateTime(pageable, loggedUser.getUuid(), date);
-        } else if (date == null && questionId != null){
+        } else if (date == null && questionId != null && name == null){
             responses = responseRepository.findByQuestionId(pageable, loggedUser.getUuid(), questionId);
-        } else if (date != null && questionId != null) {
+        } else if (date != null && questionId != null && name == null) {
             responses = responseRepository.findByDateTimeAndQuestionId(pageable, loggedUser.getUuid(), date, questionId);
+        } else if (date == null && questionId == null && name != null){
+            responses = responseRepository.findByQuestionCreatorAndUserName(pageable, loggedUser, name);
+        } else if (date != null && questionId != null && name != null){
+        responses = responseRepository.findByDateTimeAndQuestionIdAndUserName(pageable, loggedUser.getUuid(), date, questionId, name);
         } else {
             responses = responseRepository.findByQuestionCreator(pageable, loggedUser);
         }
