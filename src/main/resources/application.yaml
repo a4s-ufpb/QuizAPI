@@ -9,4 +9,4 @@ app:
   secret: ${APP_SECRET}
 springdoc:
   pathsToMatch:
-    - /api/v1/**
+    - /v1/**

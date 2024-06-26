@@ -16,10 +16,10 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
     @Query(nativeQuery = true, value = """
             SELECT r.* FROM tb_response r
             JOIN tb_question q on r.question_id = q.id
-            WHERE DATE(date_time) = :date
+            WHERE date_time BETWEEN :currentDate AND :finalDate
             AND q.creator_uuid = :uuid
             """)
-    Page<Response> findByDateTime(Pageable pageable, UUID uuid, LocalDate date);
+    Page<Response> findByDateTime(Pageable pageable, UUID uuid, LocalDate currentDate, LocalDate finalDate);
 
     @Query(nativeQuery = true, value = """
             SELECT r.* FROM tb_response r
@@ -29,25 +29,12 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
             """)
     Page<Response> findByQuestionId(Pageable pageable, UUID uuid, Long questionId);
 
-    Page<Response> findByQuestionCreatorAndUserName(Pageable pageable, User creator, String name);
-
-    @Query(nativeQuery = true, value = """
-            SELECT r.* FROM tb_response r
-            JOIN tb_question q on r.question_id = q.id
-            WHERE DATE(date_time) = :date
-            AND q.creator_uuid = :uuid
-            AND r.question_id = :questionId
-            """)
-    Page<Response> findByDateTimeAndQuestionId(Pageable pageable, UUID uuid, LocalDate date, Long questionId);
-
     @Query(nativeQuery = true, value = """
             SELECT r.* FROM tb_response r
             JOIN tb_question q ON r.question_id = q.id
-            JOIN tb_user u ON r.user_id = u.uuid
-            WHERE DATE(date_time) = :date
+            JOIN tb_user u ON r.user_uuid = u.uuid
+            WHERE u.name = :name
             AND q.creator_uuid = :uuid
-            AND r.question_id = :questionId
-            AND u.name = :name
             """)
-    Page<Response> findByDateTimeAndQuestionIdAndUserName(Pageable pageable, UUID uuid, LocalDate date, Long questionId, String name);
+    Page<Response> findByQuestionCreatorAndUserName(Pageable pageable, UUID uuid, String name);
 }
