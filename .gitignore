@@ -20,6 +20,8 @@ target/
 *.ipr
 *.env
 *.rony
+*.db
+*.mv
 
 ### NetBeans ###
 /nbproject/private/
