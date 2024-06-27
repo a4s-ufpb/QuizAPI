@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public interface ResponseRepository extends JpaRepository<Response,Long> {
@@ -37,4 +38,6 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
             AND q.creator_uuid = :uuid
             """)
     Page<Response> findByQuestionCreatorAndUserName(Pageable pageable, UUID uuid, String name);
+
+    List<Response> findByQuestionCreatorAndQuestionThemeName(User creator, String themeName);
 }

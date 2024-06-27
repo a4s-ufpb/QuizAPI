@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
 import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.AlternativeRepository;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -138,6 +140,20 @@ public class ResponseService {
         }
 
         return responses.map(Response::entityToResponse);
+    }
+
+    public List<ResponseStatisticDTO> findStatisticResponse(String token, String themeName) {
+        User loggedUser = findUserByToken(token);
+
+        List<Response> responses = responseRepository.findByQuestionCreatorAndQuestionThemeName(loggedUser, themeName);
+
+        List<ResponseStatisticDTO> responseStatisticDTOS = ResponseStatisticDTO.convertResponseToResponseStatistic(responses);
+
+        if (responseStatisticDTOS.isEmpty()){
+            throw new ResponseNotFoundException("Nenhuma resposta cadastrada");
+        }
+
+        return responseStatisticDTOS;
     }
 
     public User findUserByToken(String token) {

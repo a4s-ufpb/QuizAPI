@@ -15,7 +15,7 @@ public class QuizApplicationTests {
 	public static void setUp(){
 		port = 8080;
 		baseURI = "http://localhost";
-		basePath = "/api/v1";
+		basePath = "/v1";
 		mockUser = new MockUser();
 	}
 

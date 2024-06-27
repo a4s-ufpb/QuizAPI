@@ -22,7 +22,7 @@ public class UserRequestUtil {
     void setUp(){
         port = 8080;
         baseURI = "http://localhost";
-        basePath = "/api/v1";
+        basePath = "/v1";
     }
 
     public static UserResponse post(UserRequest userRequest){

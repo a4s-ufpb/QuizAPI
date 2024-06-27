@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
 import br.ufpb.dcx.apps4society.quizapi.service.ResponseService;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -130,6 +132,18 @@ public class ResponseController {
                                                                             @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
         return ResponseEntity.ok(service.findResponsesByDate(pageable,token, currentDate, finalDate));
+    }
+
+    @Operation(tags = "Response", summary = "Find Responses Statistics", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseStatisticDTO.class)))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/statistic/{themeName}")
+    public ResponseEntity<List<ResponseStatisticDTO>> findResponsesStatistics(@RequestHeader("Authorization") String token,
+                                                                              @PathVariable String themeName){
+        return ResponseEntity.ok(service.findStatisticResponse(token,themeName));
     }
 
     @Operation(tags = "Response", summary = "Remove Response", responses ={
