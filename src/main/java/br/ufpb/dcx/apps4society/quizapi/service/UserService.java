@@ -107,7 +107,7 @@ public class UserService {
             throw new IllegalArgumentException("Senhas inválidas");
         }
 
-        user.setPassword(userUpdatePassword.newPassword());
+        user.setPassword(passwordEncoder.encode(userUpdatePassword.newPassword()));
         userRepository.save(user);
     }
 
