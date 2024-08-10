@@ -93,6 +93,28 @@ public class UserService {
         user.setName(userUpdate.name());
     }
 
+    public void updatePassword(UUID id, UserUpdatePassword userUpdatePassword, String token) throws UserNotHavePermissionException {
+        User loggedUser = findUserByToken(token);
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(Messages.USER_NOT_FOUND));
+
+        if (loggedUser.userNotHavePermission(user)){
+            throw new UserNotHavePermissionException("Você não tem permissão para realizar essa funcionalidade");
+        }
+
+        if (!isValidPassword(userUpdatePassword)){
+            throw new IllegalArgumentException("Senhas inválidas");
+        }
+
+        user.setPassword(userUpdatePassword.newPassword());
+        userRepository.save(user);
+    }
+
+    private boolean isValidPassword(UserUpdatePassword userUpdatePassword) {
+        return userUpdatePassword.newPassword().equals(userUpdatePassword.confirmNewPassword());
+    }
+
     public User findUserByToken(String token) {
         if (token != null && token.startsWith("Bearer ")){
             token = token.substring("Bearer ".length());

@@ -86,4 +86,18 @@ public class UserController {
                                                    @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
         return ResponseEntity.ok(userService.updateUser(id, userUpdate, token));
     }
+
+    @Operation(tags = "User", summary = "Update Password", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content()),
+            @ApiResponse(description = "Bad Request", responseCode = "400", content = @Content()),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @PatchMapping(value = "/password/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> updatePassword(@PathVariable UUID id, @RequestBody @Valid UserUpdatePassword userUpdatePassword,
+                                                   @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
+        userService.updatePassword(id, userUpdatePassword, token);
+        return ResponseEntity.ok().build();
+    }
 }
