@@ -21,6 +21,8 @@ public interface QuestionRepository extends JpaRepository<Question,Long> {
             """)
     List<Question> find10QuestionsByThemeId(Long idTheme);
 
+    List<Question> findByThemeId(Long idTheme);
+
     @Query(nativeQuery = true, value = """
             SELECT * FROM tb_question
             WHERE theme_id = :idTheme

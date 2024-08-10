@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionMinResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionUpdate;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionResponse;
@@ -122,5 +123,16 @@ public class QuestionController {
     public ResponseEntity<List<QuestionResponse>> find10QuestionsByThemeIdAndCreatorId(@PathVariable Long idTheme,
                                                                                        @RequestHeader("Authorization") String token){
         return ResponseEntity.ok(service.find10QuestionsByThemeIdAndCreatorId(idTheme, token));
+    }
+
+    @Operation(tags = "Question", summary = "Find All Questions by Theme", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class)))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/all/theme/{idTheme}")
+    public ResponseEntity<List<QuestionMinResponse>> findAllQuestionsByTheme(@PathVariable Long idTheme){
+        return ResponseEntity.ok(service.findAllQuestionsByThemeId(idTheme));
     }
 }

@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionMinResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionUpdate;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -116,6 +118,19 @@ public class QuestionService {
         }
 
         return questions.map(Question::entityToResponse);
+    }
+
+    public List<QuestionMinResponse> findAllQuestionsByThemeId(Long themeId) {
+        themeRepository.findById(themeId)
+                .orElseThrow(() -> new ThemeNotFoundException("Tema não encontrado"));
+
+        List<Question> questions = questionRepository.findByThemeId(themeId);
+
+        if (questions.isEmpty()) {
+            throw new QuestionNotFoundException("Nenhuma questão cadastrada");
+        }
+
+        return questions.stream().map(Question::entityToMinResponse).toList();
     }
 
     public QuestionResponse updateQuestion(Long id, QuestionUpdate questionUpdate, String token) throws UserNotHavePermissionException {
