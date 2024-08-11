@@ -100,4 +100,15 @@ public class UserController {
         userService.updatePassword(id, userUpdatePassword, token);
         return ResponseEntity.ok().build();
     }
+
+    @Operation(tags = "User", summary = "Validade User Admin", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content()),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/admin")
+    public ResponseEntity<AdminResponse> validadeUserAdmin(@RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(userService.validateIfUserIsAdmin(token));
+    }
 }

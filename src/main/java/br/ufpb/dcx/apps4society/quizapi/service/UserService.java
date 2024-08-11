@@ -2,6 +2,7 @@ package br.ufpb.dcx.apps4society.quizapi.service;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.user.*;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.Role;
 import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
 import br.ufpb.dcx.apps4society.quizapi.security.TokenProvider;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.InvalidUserException;
@@ -129,5 +130,14 @@ public class UserService {
         }
 
         return user;
+    }
+
+    public AdminResponse validateIfUserIsAdmin(String token) {
+        return new AdminResponse(
+                findUserByToken(token)
+                        .getRole()
+                        .equals(Role.ADMIN)
+        );
+
     }
 }
