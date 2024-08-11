@@ -107,8 +107,9 @@ public class UserController {
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
             @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
     } )
-    @GetMapping(value = "/admin")
-    public ResponseEntity<AdminResponse> validadeUserAdmin(@RequestHeader("Authorization") String token) {
-        return ResponseEntity.ok(userService.validateIfUserIsAdmin(token));
+    @GetMapping(value = "/admin/{id}")
+    public ResponseEntity<AdminResponse> validadeUserAdmin(@RequestHeader("Authorization") String token,
+                                                           @PathVariable UUID id) throws UserNotHavePermissionException {
+        return ResponseEntity.ok(userService.validateIfUserIsAdmin(token, id));
     }
 }

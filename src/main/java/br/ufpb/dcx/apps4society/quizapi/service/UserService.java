@@ -132,12 +132,19 @@ public class UserService {
         return user;
     }
 
-    public AdminResponse validateIfUserIsAdmin(String token) {
-        return new AdminResponse(
-                findUserByToken(token)
-                        .getRole()
-                        .equals(Role.ADMIN)
-        );
+    public AdminResponse validateIfUserIsAdmin(String token, UUID id) throws UserNotHavePermissionException {
+        User loggedUser = findUserByToken(token);
 
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(Messages.USER_NOT_FOUND));
+
+        if (loggedUser.userNotHavePermission(user)){
+            throw new UserNotHavePermissionException("Você não tem permissão para realizar essa funcionalidade");
+        }
+
+        return new AdminResponse(
+                loggedUser
+                .getRole()
+                .equals(Role.ADMIN));
     }
 }
