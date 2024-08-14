@@ -142,8 +142,9 @@ public class ResponseController {
     } )
     @GetMapping(value = "/statistic/{themeName}")
     public ResponseEntity<List<ResponseStatisticDTO>> findResponsesStatistics(@RequestHeader("Authorization") String token,
-                                                                              @PathVariable String themeName){
-        return ResponseEntity.ok(service.findStatisticResponse(token,themeName));
+                                                                              @PathVariable String themeName,
+                                                                              @PathVariable UUID userId){
+        return ResponseEntity.ok(service.findStatisticResponse(token,themeName, userId));
     }
 
     @Operation(tags = "Response", summary = "Remove Response", responses ={

@@ -40,4 +40,5 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
     Page<Response> findByQuestionCreatorAndUserName(Pageable pageable, UUID uuid, String name);
 
     List<Response> findByQuestionCreatorAndQuestionThemeName(User creator, String themeName);
+    List<Response> findByQuestionThemeName(String themeName);
 }

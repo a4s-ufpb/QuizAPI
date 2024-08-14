@@ -142,10 +142,19 @@ public class ResponseService {
         return responses.map(Response::entityToResponse);
     }
 
-    public List<ResponseStatisticDTO> findStatisticResponse(String token, String themeName) {
+    public List<ResponseStatisticDTO> findStatisticResponse(String token, String themeName, UUID userId) {
         User loggedUser = findUserByToken(token);
 
-        List<Response> responses = responseRepository.findByQuestionCreatorAndQuestionThemeName(loggedUser, themeName);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+
+        List<Response> responses;
+
+        if (loggedUser.userNotHavePermission(user)){
+            responses = responseRepository.findByQuestionCreatorAndQuestionThemeName(loggedUser, themeName);
+        } else {
+            responses = responseRepository.findByQuestionThemeName(themeName);
+        }
 
         List<ResponseStatisticDTO> responseStatisticDTOS = ResponseStatisticDTO.convertResponseToResponseStatistic(responses);
 
