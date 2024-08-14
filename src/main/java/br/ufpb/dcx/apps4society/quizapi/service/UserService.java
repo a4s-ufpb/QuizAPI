@@ -75,13 +75,19 @@ public class UserService {
         userRepository.delete(removeUser);
     }
 
-    public Page<UserResponse> findAllUsers(Pageable pageable, String token, UUID userId) throws UserNotHavePermissionException {
-        Page<User> users = userRepository.findAll(pageable);
-
+    public Page<UserResponse> findAllUsers(Pageable pageable, String token, UUID userId, String name) throws UserNotHavePermissionException {
         boolean isAdmin = validateIfUserIsAdmin(token, userId).isAdmin();
 
         if (!isAdmin){
             throw new UserNotHavePermissionException("Você não tem permissão para realizar essa funcionalidade");
+        }
+
+        Page<User> users;
+
+        if (name.isBlank()) {
+            users = userRepository.findAll(pageable);
+        } else {
+            users = userRepository.findByNameStartsWithIgnoreCase(name, pageable);
         }
 
         return users.map(User::entityToResponse);

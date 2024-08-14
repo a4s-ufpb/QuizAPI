@@ -74,9 +74,10 @@ public class UserController {
     public ResponseEntity<Page<UserResponse>> findAllUsers(@RequestParam(value = "page", defaultValue = "0") Integer page,
                                                            @RequestParam(value = "size", defaultValue = "12") Integer size,
                                                            @RequestHeader("Authorization") String token,
-                                                           @PathVariable UUID userId) throws UserNotHavePermissionException {
+                                                           @PathVariable UUID userId,
+                                                           @RequestParam(value = "name", defaultValue = "") String name) throws UserNotHavePermissionException {
         Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(userService.findAllUsers(pageable,token, userId));
+        return ResponseEntity.ok(userService.findAllUsers(pageable,token, userId, name));
     }
 
     @Operation(tags = "User", summary = "Remove User", responses ={
