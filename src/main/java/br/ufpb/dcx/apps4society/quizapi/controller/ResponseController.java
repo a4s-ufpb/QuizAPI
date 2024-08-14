@@ -140,7 +140,7 @@ public class ResponseController {
             @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
             @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
     } )
-    @GetMapping(value = "/statistic/{themeName}")
+    @GetMapping(value = "/statistic/{themeName}/{userId}")
     public ResponseEntity<List<ResponseStatisticDTO>> findResponsesStatistics(@RequestHeader("Authorization") String token,
                                                                               @PathVariable String themeName,
                                                                               @PathVariable UUID userId){
