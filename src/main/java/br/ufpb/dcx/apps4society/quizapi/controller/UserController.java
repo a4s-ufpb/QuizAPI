@@ -11,6 +11,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +63,20 @@ public class UserController {
     @GetMapping(value = "/find")
     public ResponseEntity<UserResponse> findUser(@RequestHeader("Authorization") String token) {
         return ResponseEntity.ok(userService.findUser(token));
+    }
+
+    @Operation(tags = "User", summary = "Find All Users", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/all/{userId}")
+    public ResponseEntity<Page<UserResponse>> findAllUsers(@RequestParam(value = "page", defaultValue = "0") Integer page,
+                                                           @RequestParam(value = "size", defaultValue = "12") Integer size,
+                                                           @RequestHeader("Authorization") String token,
+                                                           @PathVariable UUID userId) throws UserNotHavePermissionException {
+        Pageable pageable = PageRequest.of(page,size);
+        return ResponseEntity.ok(userService.findAllUsers(pageable,token, userId));
     }
 
     @Operation(tags = "User", summary = "Remove User", responses ={

@@ -1,22 +1,23 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.user.*;
+import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.entity.enums.Role;
 import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
 import br.ufpb.dcx.apps4society.quizapi.security.TokenProvider;
-import br.ufpb.dcx.apps4society.quizapi.service.exception.InvalidUserException;
-import br.ufpb.dcx.apps4society.quizapi.service.exception.UserAlreadyExistsException;
-import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotFoundException;
-import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.*;
 import br.ufpb.dcx.apps4society.quizapi.util.Messages;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -72,6 +73,18 @@ public class UserService {
         }
 
         userRepository.delete(removeUser);
+    }
+
+    public Page<UserResponse> findAllUsers(Pageable pageable, String token, UUID userId) throws UserNotHavePermissionException {
+        Page<User> users = userRepository.findAll(pageable);
+
+        boolean isAdmin = validateIfUserIsAdmin(token, userId).isAdmin();
+
+        if (!isAdmin){
+            throw new UserNotHavePermissionException("Você não tem permissão para realizar essa funcionalidade");
+        }
+
+        return users.map(User::entityToResponse);
     }
 
     public UserResponse updateUser(UUID id, UserUpdate userUpdate, String token) throws UserNotHavePermissionException {
