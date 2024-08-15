@@ -102,15 +102,14 @@ public class QuestionController {
             @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
     } )
     @GetMapping(value = "/creator/theme/{idTheme}")
-    public ResponseEntity<Page<QuestionResponse>> findQuestionsByCreator(@RequestHeader("Authorization") String token,
-                                                                         @PathVariable Long idTheme,
+    public ResponseEntity<Page<QuestionResponse>> findQuestionsByCreator(@PathVariable Long idTheme,
                                                                          @RequestParam(value = "title", defaultValue = "") String title,
                                                                          @RequestParam(value = "page", defaultValue = "0") Integer page,
                                                                          @RequestParam(value = "size", defaultValue = "20") Integer size,
                                                                          @RequestParam(value = "direction", defaultValue = "asc") String direction){
         Sort.Direction pageDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page,size, Sort.by(pageDirection,"id"));
-        return ResponseEntity.ok(service.findQuestionsByCreatorAndTheme(token, title, idTheme, pageable));
+        return ResponseEntity.ok(service.findQuestionsByCreatorAndTheme(title, idTheme, pageable));
     }
 
     @Operation(tags = "Question", summary = "Find 10 Questions by Theme and Creator", responses ={
