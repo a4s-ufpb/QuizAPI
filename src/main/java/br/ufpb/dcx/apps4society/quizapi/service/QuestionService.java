@@ -118,7 +118,7 @@ public class QuestionService {
         return questions.map(Question::entityToResponse);
     }
 
-    public List<QuestionMinResponse> findAllQuestionsByThemeId(Long themeId) {
+    public List<QuestionResponse> findAllQuestionsByThemeId(Long themeId) {
         themeRepository.findById(themeId)
                 .orElseThrow(() -> new ThemeNotFoundException("Tema não encontrado"));
 
@@ -128,7 +128,7 @@ public class QuestionService {
             throw new QuestionNotFoundException("Nenhuma questão cadastrada");
         }
 
-        return questions.stream().map(Question::entityToMinResponse).toList();
+        return questions.stream().map(Question::entityToResponse).toList();
     }
 
     public QuestionResponse updateQuestion(Long id, QuestionUpdate questionUpdate, String token) throws UserNotHavePermissionException {

@@ -1,6 +1,5 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
-import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionMinResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionUpdate;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionResponse;
@@ -131,7 +130,7 @@ public class QuestionController {
             @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
     } )
     @GetMapping(value = "/all/theme/{idTheme}")
-    public ResponseEntity<List<QuestionMinResponse>> findAllQuestionsByTheme(@PathVariable Long idTheme){
+    public ResponseEntity<List<QuestionResponse>> findAllQuestionsByTheme(@PathVariable Long idTheme){
         return ResponseEntity.ok(service.findAllQuestionsByThemeId(idTheme));
     }
 }
