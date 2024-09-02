@@ -4,13 +4,14 @@ import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 @Entity(name = "tb_response")
 public class Response implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private LocalDateTime dateTime = LocalDateTime.now();
+    private LocalDate dateTime = LocalDate.now();
     @ManyToOne(cascade = CascadeType.PERSIST)
     private User user;
     @ManyToOne(cascade = CascadeType.PERSIST)
@@ -35,7 +36,7 @@ public class Response implements Serializable {
                 alternative.entityToResponse());
     }
 
-    public LocalDateTime getDateTime() {
+    public LocalDate getDateTime() {
         return dateTime;
     }
 
