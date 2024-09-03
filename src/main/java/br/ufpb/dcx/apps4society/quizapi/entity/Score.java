@@ -21,6 +21,10 @@ public class Score implements Serializable {
     private User user;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Theme theme;
+    @Transient
+    private final Double HIT_VALUE = 97.45;
+    @Transient
+    private final Double REDUCE_VALUE = 1.26;
 
     public Score(){}
 
@@ -31,9 +35,7 @@ public class Score implements Serializable {
     }
 
     private Double calculateResult(Integer numberOfHits, Integer totalTime){
-        double hitValue = 87.45;
-        double reduceValue = 1.46;
-        double result = (numberOfHits * hitValue) - (totalTime * reduceValue);
+        double result = (numberOfHits * HIT_VALUE) - (totalTime * REDUCE_VALUE);
 
         String formattedResult = new DecimalFormat("#.###").format(result).replace(",",".");
 
