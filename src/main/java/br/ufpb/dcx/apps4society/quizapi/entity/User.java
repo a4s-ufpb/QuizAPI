@@ -28,6 +28,8 @@ public class User implements UserDetails {
     private List<Response> responses = new ArrayList<>();
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Score> scores = new ArrayList<>();
+    @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
+    private List<Room> rooms = new ArrayList<>();
 
     public User(){
 
