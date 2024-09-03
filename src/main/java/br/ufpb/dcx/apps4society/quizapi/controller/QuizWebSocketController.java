@@ -1,45 +1,31 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
-import br.ufpb.dcx.apps4society.quizapi.dto.message.QuizMessage;
-import br.ufpb.dcx.apps4society.quizapi.service.RoomService;
-import org.springframework.beans.factory.annotation.Autowired;
+import br.ufpb.dcx.apps4society.quizapi.dto.room.QuizMessage;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.util.HtmlUtils;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+@RestController
 public class QuizWebSocketController {
-    private final RoomService roomService;
-    @Autowired
-    public QuizWebSocketController(RoomService roomService) {
-        this.roomService = roomService;
-    }
 
     @MessageMapping("/join-room")
     @SendTo("/topic/room")
     public QuizMessage joinRoom(QuizMessage message) {
-        // Lógica para adicionar o jogador à sala
-        // Exemplo: roomService.joinRoom(roomId);
-        String content = HtmlUtils.htmlEscape(message.content()) + " joined the room!";
-        return new QuizMessage("JOINED_ROOM", content, message.sender());
+        System.out.println("Received join-room message: " + message);
+        return new QuizMessage("JOINED_ROOM", "A user joined the room", message.sender());
     }
 
     @MessageMapping("/start-quiz")
     @SendTo("/topic/room")
     public QuizMessage startQuiz(QuizMessage message) {
-        // Lógica para iniciar o quiz na sala
-        // Exemplo: roomService.startQuiz(roomId);
-        String content = HtmlUtils.htmlEscape(message.content()) + " started the quiz!";
-        return new QuizMessage("START_QUIZ", content, message.sender());
+        System.out.println("Received start-quiz message: " + message);
+        return new QuizMessage("START_QUIZ", "The quiz has started", message.sender());
     }
 
     @MessageMapping("/submit-answer")
     @SendTo("/topic/room")
     public QuizMessage submitAnswer(QuizMessage message) {
-        // Lógica para processar a resposta do jogador
-        // Exemplo: roomService.submitAnswer(roomId, answer);
-        String content = HtmlUtils.htmlEscape(message.content()) + " submitted an answer!";
-        return new QuizMessage("SUBMIT_ANSWER", content, message.sender());
+        System.out.println("Received submit-answer message: " + message);
+        return new QuizMessage("SUBMIT_ANSWER", "An answer was submitted", message.sender());
     }
 }

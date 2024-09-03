@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.entity;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,6 +24,10 @@ public class Room {
 
     public Room(User creator) {
         this.creator = creator;
+    }
+
+    public RoomResponse entityToResponse() {
+        return new RoomResponse(roomId, creator.getUuid(), selectedQuizId, started);
     }
 
     public UUID getRoomId() {
@@ -56,4 +61,5 @@ public class Room {
     public void setStarted(boolean started) {
         this.started = started;
     }
+
 }
