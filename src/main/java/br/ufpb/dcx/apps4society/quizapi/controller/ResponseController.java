@@ -88,50 +88,21 @@ public class ResponseController {
         return ResponseEntity.ok(service.findResponsesByQuestionCreator(pageable,token));
     }
 
-    @Operation(tags = "Response", summary = "Find Responses by Question Id", responses ={
+    @Operation(tags = "Response", summary = "Find Responses by Username or/and Date", responses ={
             @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
             @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
             @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
     } )
-    @GetMapping(value = "/question/creator/id")
-    public ResponseEntity<Page<ResponseDTO>> findResponsesByQuestionId(@RequestParam(value = "page", defaultValue = "0") Integer page,
-                                                                            @RequestParam(value = "size", defaultValue = "20") Integer size,
-                                                                            @RequestParam(value = "questionId", defaultValue = "") Long questionId,
-                                                                            @RequestHeader("Authorization") String token){
+    @GetMapping(value = "/username/date")
+    public ResponseEntity<Page<ResponseDTO>> findResponsesByUsernameOrDate(@RequestParam(value = "page", defaultValue = "0") Integer page,
+                                                                           @RequestParam(value = "size", defaultValue = "20") Integer size,
+                                                                           @RequestParam(value = "currentDate", defaultValue = "") LocalDate currentDate,
+                                                                           @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
+                                                                           @RequestParam(value = "username", defaultValue = "") String username,
+                                                                           @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findResponsesByQuestionId(pageable,token, questionId));
-    }
-
-    @Operation(tags = "Response", summary = "Find Responses by User Name", responses ={
-            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
-    } )
-    @GetMapping(value = "/question/creator/name")
-    public ResponseEntity<Page<ResponseDTO>> findResponsesByUserName(@RequestParam(value = "page", defaultValue = "0") Integer page,
-                                                                            @RequestParam(value = "size", defaultValue = "20") Integer size,
-                                                                            @RequestParam(value = "name", defaultValue = "") String name,
-                                                                            @RequestHeader("Authorization") String token){
-        Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findResponsesByUserName(pageable,token, name));
-    }
-
-    @Operation(tags = "Response", summary = "Find Responses by Date", responses ={
-            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
-    } )
-    @GetMapping(value = "/question/creator/date")
-    public ResponseEntity<Page<ResponseDTO>> findResponsesByDate(@RequestParam(value = "page", defaultValue = "0") Integer page,
-                                                                            @RequestParam(value = "size", defaultValue = "20") Integer size,
-                                                                            @RequestParam(value = "currentDate", defaultValue = "") LocalDate currentDate,
-                                                                            @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
-                                                                            @RequestHeader("Authorization") String token){
-        Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findResponsesByDate(pageable,token, currentDate, finalDate));
+        return ResponseEntity.ok(service.findResponsesByUserNameOrDate(pageable, token, username, currentDate, finalDate));
     }
 
     @Operation(tags = "Response", summary = "Find Responses Statistics", responses ={

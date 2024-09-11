@@ -24,6 +24,16 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
 
     @Query(nativeQuery = true, value = """
             SELECT r.* FROM tb_response r
+            JOIN tb_question q ON r.question_id = q.id
+            JOIN tb_user u ON r.user_uuid = u.uuid
+            WHERE u.name = :name
+            AND r.date_time BETWEEN :currentDate AND :finalDate
+            AND q.creator_uuid = :uuid
+            """)
+    Page<Response> findByDateTimeAndUserName(Pageable pageable, UUID uuid, String name, LocalDate currentDate, LocalDate finalDate);
+
+    @Query(nativeQuery = true, value = """
+            SELECT r.* FROM tb_response r
             JOIN tb_question q on r.question_id = q.id
             WHERE r.question_id = :questionId
             AND q.creator_uuid = :uuid

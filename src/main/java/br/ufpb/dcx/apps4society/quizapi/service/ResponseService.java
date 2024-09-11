@@ -106,37 +106,24 @@ public class ResponseService {
         return responses.map(Response::entityToResponse);
     }
 
-    public Page<ResponseDTO> findResponsesByQuestionId(Pageable pageable, String token, Long questionId){
+    public Page<ResponseDTO> findResponsesByUserNameOrDate(Pageable pageable, String token, String name,
+                                                                       LocalDate currentDate, LocalDate finalDate) {
         User loggedUser = findUserByToken(token);
 
-        Page<Response> responses = responseRepository.findByQuestionId(pageable,loggedUser.getUuid(), questionId);
+        Page<Response> responses;
 
-        if (responses.isEmpty()){
-            throw new ResponseNotFoundException("Essa questão ainda não possui resposta cadastrada");
+        if (!name.isBlank() && currentDate == null && finalDate == null) {
+            responses = responseRepository.findByQuestionCreatorAndUserName(pageable, loggedUser.getUuid(), name);
+        } else if (name.isBlank() && currentDate != null && finalDate != null) {
+            responses = responseRepository.findByDateTime(pageable, loggedUser.getUuid(), currentDate, finalDate);
+        } else if (!name.isBlank() && currentDate != null && finalDate != null) {
+            responses = responseRepository.findByDateTimeAndUserName(pageable, loggedUser.getUuid(), name, currentDate, finalDate);
+        } else {
+            responses = responseRepository.findByQuestionCreator(pageable, loggedUser);
         }
 
-        return responses.map(Response::entityToResponse);
-    }
-
-    public Page<ResponseDTO> findResponsesByUserName(Pageable pageable, String token, String name){
-        User loggedUser = findUserByToken(token);
-
-        Page<Response> responses = responseRepository.findByQuestionCreatorAndUserName(pageable, loggedUser.getUuid(), name);
-
         if (responses.isEmpty()){
-            throw new ResponseNotFoundException("Essa questão ainda não possui resposta cadastrada");
-        }
-
-        return responses.map(Response::entityToResponse);
-    }
-
-    public Page<ResponseDTO> findResponsesByDate(Pageable pageable, String token, LocalDate currentDate, LocalDate finalDate){
-        User loggedUser = findUserByToken(token);
-
-        Page<Response> responses = responseRepository.findByDateTime(pageable, loggedUser.getUuid(), currentDate, finalDate);
-
-        if (responses.isEmpty()){
-            throw new ResponseNotFoundException("Essa questão ainda não possui resposta cadastrada");
+            throw new ResponseNotFoundException("Nenhuma resposta cadastrada!");
         }
 
         return responses.map(Response::entityToResponse);
