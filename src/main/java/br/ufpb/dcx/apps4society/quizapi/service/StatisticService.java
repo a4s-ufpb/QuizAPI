@@ -4,12 +4,9 @@ import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.StatisticPerConclusion;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
-import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.StatisticRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
-import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
-import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotFoundException;
-import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,26 +16,23 @@ import java.util.UUID;
 @Service
 public class StatisticService {
     private final StatisticRepository statisticRepository;
-    private final UserRepository userRepository;
     private final ThemeRepository themeRepository;
 
-    public StatisticService(StatisticRepository statisticRepository, UserRepository userRepository, ThemeRepository themeRepository) {
+    public StatisticService(StatisticRepository statisticRepository, ThemeRepository themeRepository) {
         this.statisticRepository = statisticRepository;
-        this.userRepository = userRepository;
         this.themeRepository = themeRepository;
     }
 
-    public StatisticResponse insertStatistic(StatisticRequest statisticRequest) throws UserNotHavePermissionException {
-        User creator = userRepository.findById(statisticRequest.creatorId())
-                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
-
+    public StatisticResponse insertStatistic(StatisticRequest statisticRequest) {
         Theme theme = themeRepository.findByNameIgnoreCase(statisticRequest.themeName());
 
-        if (creator.userNotHavePermission(theme.getCreator())) {
-            throw new UserNotHavePermissionException("O usuário informado não é o criador do tema");
+        if (theme == null) {
+            throw new ThemeNotFoundException("Tema não encontrado");
         }
 
+        UUID creatorId = theme.getCreator().getUuid();
         StatisticPerConclusion statistic = new StatisticPerConclusion(statisticRequest);
+        statistic.setCreatorId(creatorId);
 
         statisticRepository.save(statistic);
 

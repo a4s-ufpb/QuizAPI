@@ -24,19 +24,16 @@ public class StatisticPerConclusion {
     public StatisticPerConclusion() {
     }
 
-    public StatisticPerConclusion(UUID creatorId, String studentName, String themeName, Double percentagemOfHits) {
-        this.creatorId = creatorId;
+    public StatisticPerConclusion(String studentName, String themeName, Double percentagemOfHits) {
         this.studentName = studentName;
         this.themeName = themeName;
         this.percentagemOfHits = percentagemOfHits;
     }
 
     public StatisticPerConclusion(StatisticRequest statisticRequest) {
-        this.creatorId = statisticRequest.creatorId();
         this.studentName = statisticRequest.studentName();
         this.themeName = statisticRequest.themeName();
         this.percentagemOfHits = statisticRequest.percentagemOfHits();
-
     }
 
     public StatisticResponse entityToResponse() {

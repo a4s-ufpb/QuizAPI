@@ -3,7 +3,6 @@ package br.ufpb.dcx.apps4society.quizapi.controller;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticResponse;
 import br.ufpb.dcx.apps4society.quizapi.service.StatisticService;
-import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -36,7 +35,7 @@ public class StatisticController {
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
     } )
     @PostMapping
-    public ResponseEntity<StatisticResponse> insertStatistic(@RequestBody @Valid StatisticRequest statisticRequest) throws UserNotHavePermissionException {
+    public ResponseEntity<StatisticResponse> insertStatistic(@RequestBody @Valid StatisticRequest statisticRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(statisticService.insertStatistic(statisticRequest));
     }
 
