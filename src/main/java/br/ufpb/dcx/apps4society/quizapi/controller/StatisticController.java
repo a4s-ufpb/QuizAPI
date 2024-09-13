@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -50,8 +51,10 @@ public class StatisticController {
                                                                              @RequestParam(value = "size", defaultValue = "20") Integer size,
                                                                              @RequestParam(value = "studentName", defaultValue = "") String studentName,
                                                                              @RequestParam(value = "themeName", defaultValue = "") String themeName,
+                                                                             @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
+                                                                             @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
                                                                              @PathVariable UUID creatorId) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(statisticService.findAllStatisticsByCreator(pageable, creatorId, studentName, themeName));
+        return ResponseEntity.ok(statisticService.findAllStatisticsByCreator(pageable, creatorId, studentName, themeName, startDate, endDate));
     }
 }

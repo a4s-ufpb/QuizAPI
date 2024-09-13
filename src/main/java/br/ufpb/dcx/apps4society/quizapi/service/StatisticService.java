@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -39,16 +40,33 @@ public class StatisticService {
         return statistic.entityToResponse();
     }
 
-    public Page<StatisticResponse> findAllStatisticsByCreator(Pageable pageable, UUID creatorId, String studentName, String themeName) {
+    public Page<StatisticResponse> findAllStatisticsByCreator(Pageable pageable, UUID creatorId, String studentName, String themeName, LocalDate startDate, LocalDate endDate) {
         Page<StatisticPerConclusion> statistic;
 
-        if (!studentName.isBlank() && themeName.isBlank()) {
+        boolean hasStudentName = !studentName.isBlank();
+        boolean hasThemeName = !themeName.isBlank();
+        boolean hasDateRange = startDate != null && endDate != null;
+
+        if (hasStudentName && !hasThemeName && hasDateRange) {
+            // Buscar por creatorId, studentName e intervalo de datas
+            statistic = statisticRepository.findByCreatorIdAndStudentNameAndDateRange(pageable, creatorId, studentName, startDate, endDate);
+        } else if (!hasStudentName && hasThemeName && hasDateRange) {
+            // Buscar por creatorId, themeName e intervalo de datas
+            statistic = statisticRepository.findByCreatorIdAndThemeNameAndDateRange(pageable, creatorId, themeName, startDate, endDate);
+        } else if (hasStudentName && hasThemeName && hasDateRange) {
+            // Buscar por creatorId, themeName, studentName e intervalo de datas
+            statistic = statisticRepository.findByCreatorIdAndThemeNameAndStudentNameAndDateRange(pageable, creatorId, themeName, studentName, startDate, endDate);
+        } else if (hasStudentName && !hasThemeName) {
+            // Buscar por creatorId e studentName (sem data)
             statistic = statisticRepository.findByCreatorIdAndStudentName(pageable, creatorId, studentName);
-        } else if (studentName.isBlank() && !themeName.isBlank()) {
+        } else if (!hasStudentName && hasThemeName) {
+            // Buscar por creatorId e themeName (sem data)
             statistic = statisticRepository.findByCreatorIdAndThemeName(pageable, creatorId, themeName);
-        } else if (!studentName.isBlank() && !themeName.isBlank()) {
-            statistic = statisticRepository.findByCreatorIdAndStudentNameAndThemeName(pageable, creatorId, studentName, themeName);
+        } else if (hasDateRange) {
+            // Buscar por creatorId e intervalo de datas
+            statistic = statisticRepository.findByCreatorIdAndDateRange(pageable, creatorId, startDate, endDate);
         } else {
+            // Buscar apenas por creatorId
             statistic = statisticRepository.findByCreatorId(pageable, creatorId);
         }
 
