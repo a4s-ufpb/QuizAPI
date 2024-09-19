@@ -1,11 +1,14 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
-import br.ufpb.dcx.apps4society.quizapi.dto.message.QuizMessage;
+import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomRequest;
+import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.Room;
+import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.RoomRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.RoomNotFoundException;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -15,52 +18,48 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
-    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public RoomService(RoomRepository roomRepository, UserRepository userRepository, SimpMessagingTemplate messagingTemplate) {
+    public RoomService(RoomRepository roomRepository, UserRepository userRepository) {
         this.roomRepository = roomRepository;
         this.userRepository = userRepository;
-        this.messagingTemplate = messagingTemplate;
     }
 
-    public Room createRoom(UUID creatorId) {
+    public RoomResponse createRoom(RoomRequest roomRequest) {
+        User creator = userRepository.findById(roomRequest.creatorId())
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+
         Room room = new Room();
-        room.setRoomId(UUID.randomUUID());
-        room.setCreator(userRepository.findById(creatorId).orElseThrow());
-        room.setStarted(false);
+        room.setCreator(creator);
         roomRepository.save(room);
 
-        messagingTemplate.convertAndSend("/topic/room", new QuizMessage("ROOM_CREATED", "Sala criada", "Server"));
-
-        return room;
+        return room.entityToResponse();
     }
 
-    public Room joinRoom(UUID roomId) {
-        Room room = roomRepository.findById(roomId).orElseThrow();
+    public RoomResponse joinRoom(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"));
 
-        messagingTemplate.convertAndSend("/topic/room", new QuizMessage("JOINED_ROOM", "Um jogador entrou na sala", "Server"));
-
-        return room;
+        return room.entityToResponse();
     }
 
-    public Room selectQuiz(UUID roomId, Long quizId) {
-        Room room = roomRepository.findById(roomId).orElseThrow();
+    public RoomResponse selectQuiz(UUID roomId, Long quizId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"));
+
         room.setSelectedQuizId(quizId);
         roomRepository.save(room);
 
-        messagingTemplate.convertAndSend("/topic/room", new QuizMessage("QUIZ_SELECTED", "Um quiz foi selecionado", "Server"));
-
-        return room;
+        return room.entityToResponse();
     }
 
-    public Room startQuiz(UUID roomId) {
-        Room room = roomRepository.findById(roomId).orElseThrow();
+    public RoomResponse startQuiz(UUID roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"));
+
         room.setStarted(true);
         roomRepository.save(room);
 
-        messagingTemplate.convertAndSend("/topic/room", new QuizMessage("START_QUIZ", "O quiz começou!", "Server"));
-
-        return room;
+        return room.entityToResponse();
     }
 }

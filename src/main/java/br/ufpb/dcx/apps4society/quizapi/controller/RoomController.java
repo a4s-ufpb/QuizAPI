@@ -1,5 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomRequest;
+import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.Room;
 import br.ufpb.dcx.apps4society.quizapi.service.RoomService;
 import org.springframework.http.ResponseEntity;
@@ -18,26 +20,22 @@ public class RoomController {
     }
 
     @PostMapping
-    public ResponseEntity<Room> createRoom(@RequestBody UUID creatorId) {
-        Room room = roomService.createRoom(creatorId);
-        return ResponseEntity.ok(room);
+    public ResponseEntity<RoomResponse> createRoom(@RequestBody RoomRequest roomRequest) {
+        return ResponseEntity.status(201).body(roomService.createRoom(roomRequest));
     }
 
     @GetMapping("/{roomId}")
-    public ResponseEntity<Room> joinRoom(@PathVariable UUID roomId) {
-        Room room = roomService.joinRoom(roomId);
-        return ResponseEntity.ok(room);
+    public ResponseEntity<RoomResponse> joinRoom(@PathVariable UUID roomId) {
+        return ResponseEntity.ok(roomService.joinRoom(roomId));
     }
 
     @PostMapping("/{roomId}/select-quiz")
-    public ResponseEntity<Room> selectQuiz(@PathVariable UUID roomId, @RequestBody Long quizId) {
-        Room room = roomService.selectQuiz(roomId, quizId);
-        return ResponseEntity.ok(room);
+    public ResponseEntity<RoomResponse> selectQuiz(@PathVariable UUID roomId, @RequestBody Long quizId) {
+        return ResponseEntity.ok(roomService.selectQuiz(roomId, quizId));
     }
 
     @PostMapping("/{roomId}/start-quiz")
-    public ResponseEntity<Room> startQuiz(@PathVariable UUID roomId) {
-        Room room = roomService.startQuiz(roomId);
-        return ResponseEntity.ok(room);
+    public ResponseEntity<RoomResponse> startQuiz(@PathVariable UUID roomId) {
+        return ResponseEntity.ok(roomService.startQuiz(roomId));
     }
 }
