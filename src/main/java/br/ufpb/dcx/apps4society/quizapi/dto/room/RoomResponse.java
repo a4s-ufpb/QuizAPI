@@ -1,15 +1,16 @@
 package br.ufpb.dcx.apps4society.quizapi.dto.room;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.user.UserResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 
 public record RoomResponse(
          UUID roomId,
-         User creator,
+         UserResponse creator,
          Long selectedQuizId,
          Boolean started,
-         Set<Player> users
+         List<Player> users
 ) {
 }

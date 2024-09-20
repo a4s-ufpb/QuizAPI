@@ -4,9 +4,7 @@ import br.ufpb.dcx.apps4society.quizapi.dto.room.Player;
 import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
 import jakarta.persistence.*;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Entity(name = "tb_room")
 public class Room {
@@ -18,7 +16,7 @@ public class Room {
     private Long selectedQuizId;
     private boolean started = false;
     @Transient
-    private Set<User> players = new HashSet<>();
+    private List<User> players = new ArrayList<>();
 
     public Room() {
     }
@@ -68,14 +66,20 @@ public class Room {
     }
 
     public RoomResponse entityToResponse() {
-        return new RoomResponse(roomId, creator, selectedQuizId, started, (Set<Player>) players.stream().map(player -> player.convertUserToPlayer()));
+        return new RoomResponse(roomId,
+                creator.entityToResponse(),
+                selectedQuizId,
+                started,
+                players.stream()
+                        .map(User::convertUserToPlayer)
+                        .toList());
     }
 
-    public Set<User> getPlayers() {
+    public List<User> getPlayers() {
         return players;
     }
 
-    public void setPlayers(Set<User> players) {
+    public void setPlayers(List<User> players) {
         this.players = players;
     }
 }
