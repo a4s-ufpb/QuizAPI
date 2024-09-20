@@ -44,6 +44,12 @@ public class RoomService {
         roomRepository.delete(room);
     }
 
+    public RoomResponse findRoomById(UUID roomId) {
+        return roomRepository.findById(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"))
+                .entityToResponse();
+    }
+
     public RoomResponse joinRoom(UUID roomId, UUID playerId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"));

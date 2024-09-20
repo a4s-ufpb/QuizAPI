@@ -30,7 +30,12 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{roomId}/{playerId}")
+    @GetMapping("/{roomId}")
+    public ResponseEntity<RoomResponse> findRoomById(@PathVariable UUID roomId) {
+        return ResponseEntity.ok(roomService.findRoomById(roomId));
+    }
+
+    @PatchMapping("/{roomId}/{playerId}")
     public ResponseEntity<RoomResponse> joinRoom(@PathVariable UUID roomId, @PathVariable UUID playerId) {
         return ResponseEntity.ok(roomService.joinRoom(roomId, playerId));
     }
