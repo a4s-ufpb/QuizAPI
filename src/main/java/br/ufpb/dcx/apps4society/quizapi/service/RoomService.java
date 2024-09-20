@@ -31,16 +31,40 @@ public class RoomService {
 
         Room room = new Room();
         room.setCreator(creator);
+        room.addPlayer(creator);
         roomRepository.save(room);
 
         return room.entityToResponse();
     }
 
-    public RoomResponse joinRoom(UUID roomId) {
+    public void deleteRoom(UUID roomId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"));
 
+        roomRepository.delete(room);
+    }
+
+    public RoomResponse joinRoom(UUID roomId, UUID playerId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"));
+
+        User player = userRepository.findById(playerId)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+
+        room.addPlayer(player);
+
         return room.entityToResponse();
+    }
+
+    public void quitRoom(UUID roomId, UUID playerId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"));
+
+        User player = userRepository.findById(playerId)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+
+        room.removePlayer(player);
+        roomRepository.save(room);
     }
 
     public RoomResponse selectQuiz(UUID roomId, Long quizId) {

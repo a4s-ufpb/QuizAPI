@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.entity;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.room.Player;
 import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -7,6 +8,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity(name = "tb_room")
@@ -18,12 +21,21 @@ public class Room {
     private User creator;
     private Long selectedQuizId;
     private boolean started = false;
+    private Set<User> players = new HashSet<>();
 
     public Room() {
     }
 
     public Room(User creator) {
         this.creator = creator;
+    }
+
+    public void addPlayer(User player) {
+        this.players.add(player);
+    }
+
+    public void removePlayer(User player) {
+        this.players.remove(player);
     }
 
     public UUID getRoomId() {
@@ -59,6 +71,14 @@ public class Room {
     }
 
     public RoomResponse entityToResponse() {
-        return new RoomResponse(roomId, creator, selectedQuizId, started);
+        return new RoomResponse(roomId, creator, selectedQuizId, started, (Set<Player>) players.stream().map(player -> player.convertUserToPlayer()));
+    }
+
+    public Set<User> getPlayers() {
+        return players;
+    }
+
+    public void setPlayers(Set<User> players) {
+        this.players = players;
     }
 }

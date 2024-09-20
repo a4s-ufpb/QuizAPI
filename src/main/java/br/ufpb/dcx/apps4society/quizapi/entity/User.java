@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.entity;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.room.Player;
 import br.ufpb.dcx.apps4society.quizapi.dto.user.UserRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.user.UserResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.enums.Role;
@@ -74,6 +75,10 @@ public class User implements UserDetails {
 
     public boolean userNotHavePermission(User user){
         return !this.equals(user) && this.getRole() == Role.USER;
+    }
+
+    public Player convertUserToPlayer() {
+        return new Player(uuid, name);
     }
 
     public String getName() {

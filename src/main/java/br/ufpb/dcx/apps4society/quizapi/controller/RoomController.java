@@ -24,9 +24,21 @@ public class RoomController {
         return ResponseEntity.status(201).body(roomService.createRoom(roomRequest));
     }
 
-    @GetMapping("/{roomId}")
-    public ResponseEntity<RoomResponse> joinRoom(@PathVariable UUID roomId) {
-        return ResponseEntity.ok(roomService.joinRoom(roomId));
+    @PostMapping
+    public ResponseEntity<Void> deleteRoom(@PathVariable UUID roomId) {
+        roomService.deleteRoom(roomId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{roomId}/{playerId}")
+    public ResponseEntity<RoomResponse> joinRoom(@PathVariable UUID roomId, @PathVariable UUID playerId) {
+        return ResponseEntity.ok(roomService.joinRoom(roomId, playerId));
+    }
+
+    @PatchMapping("/quit/{roomId}/{playerId}")
+    public ResponseEntity<Void> quitRoom(@PathVariable UUID roomId, @PathVariable UUID playerId) {
+        roomService.quitRoom(roomId, playerId);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/select-quiz/{roomId}/{quizId}")
