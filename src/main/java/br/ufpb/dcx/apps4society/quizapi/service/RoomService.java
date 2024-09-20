@@ -52,6 +52,7 @@ public class RoomService {
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
 
         room.addPlayer(player);
+        roomRepository.save(room);
 
         return room.entityToResponse();
     }

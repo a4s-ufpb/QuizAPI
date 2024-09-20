@@ -24,7 +24,7 @@ public class RoomController {
         return ResponseEntity.status(201).body(roomService.createRoom(roomRequest));
     }
 
-    @PostMapping
+    @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> deleteRoom(@PathVariable UUID roomId) {
         roomService.deleteRoom(roomId);
         return ResponseEntity.noContent().build();
