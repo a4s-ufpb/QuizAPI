@@ -29,12 +29,12 @@ public class RoomController {
         return ResponseEntity.ok(roomService.joinRoom(roomId));
     }
 
-    @PostMapping("/{roomId}/select-quiz")
+    @PatchMapping("/select-quiz/{roomId}/{quizId}")
     public ResponseEntity<RoomResponse> selectQuiz(@PathVariable UUID roomId, @RequestBody Long quizId) {
         return ResponseEntity.ok(roomService.selectQuiz(roomId, quizId));
     }
 
-    @PostMapping("/{roomId}/start-quiz")
+    @PatchMapping("/start-quiz/{roomId}")
     public ResponseEntity<RoomResponse> startQuiz(@PathVariable UUID roomId) {
         return ResponseEntity.ok(roomService.startQuiz(roomId));
     }
