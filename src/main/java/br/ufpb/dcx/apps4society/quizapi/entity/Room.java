@@ -2,11 +2,7 @@ package br.ufpb.dcx.apps4society.quizapi.entity;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.room.Player;
 import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -21,6 +17,7 @@ public class Room {
     private User creator;
     private Long selectedQuizId;
     private boolean started = false;
+    @Transient
     private Set<User> players = new HashSet<>();
 
     public Room() {
