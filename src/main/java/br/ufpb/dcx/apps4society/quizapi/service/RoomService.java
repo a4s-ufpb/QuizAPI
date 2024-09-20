@@ -6,6 +6,7 @@ import br.ufpb.dcx.apps4society.quizapi.entity.Room;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.RoomRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.RoomException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.RoomNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,10 @@ public class RoomService {
 
         User player = userRepository.findById(playerId)
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+
+        if (room.containsPlayer(player)) {
+            throw new RoomException("O jogador já está na sala!");
+        }
 
         room.addPlayer(player);
         roomRepository.save(room);

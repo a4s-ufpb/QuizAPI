@@ -15,7 +15,12 @@ public class Room {
     private User creator;
     private Long selectedQuizId;
     private boolean started = false;
-    @Transient
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "tb_room_players",
+            joinColumns = @JoinColumn(name = "room_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
     private List<User> players = new ArrayList<>();
 
     public Room() {
@@ -31,6 +36,10 @@ public class Room {
 
     public void removePlayer(User player) {
         this.players.remove(player);
+    }
+
+    public boolean containsPlayer(User user) {
+        return this.players.contains(user);
     }
 
     public UUID getRoomId() {
@@ -81,5 +90,18 @@ public class Room {
 
     public void setPlayers(List<User> players) {
         this.players = players;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        Room room = (Room) object;
+        return Objects.equals(roomId, room.roomId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(roomId);
     }
 }

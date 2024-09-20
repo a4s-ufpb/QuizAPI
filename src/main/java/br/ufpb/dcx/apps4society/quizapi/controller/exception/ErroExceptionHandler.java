@@ -75,7 +75,7 @@ public class ErroExceptionHandler {
     }
 
     @ExceptionHandler(UserNotHavePermissionException.class)
-    public ResponseEntity<ErroResponse> userNotHavePermissionrErro(UserNotHavePermissionException e, HttpServletRequest request){
+    public ResponseEntity<ErroResponse> userNotHavePermissionErro(UserNotHavePermissionException e, HttpServletRequest request){
         HttpStatus status = HttpStatus.FORBIDDEN;
         ErroResponse erroResponse = new ErroResponse(Instant.now(),status.value(),e.getMessage(),request.getRequestURI());
         return ResponseEntity.status(status).body(erroResponse);
@@ -112,6 +112,20 @@ public class ErroExceptionHandler {
     @ExceptionHandler(AlternativeNotFoundException.class)
     public ResponseEntity<ErroResponse> alternativeNotFoundErro(AlternativeNotFoundException e, HttpServletRequest request){
         HttpStatus status = HttpStatus.NOT_FOUND;
+        ErroResponse erroResponse = new ErroResponse(Instant.now(),status.value(),e.getMessage(),request.getRequestURI());
+        return ResponseEntity.status(status).body(erroResponse);
+    }
+
+    @ExceptionHandler(RoomNotFoundException.class)
+    public ResponseEntity<ErroResponse> roomNotFoundErro(RoomNotFoundException e, HttpServletRequest request){
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        ErroResponse erroResponse = new ErroResponse(Instant.now(),status.value(),e.getMessage(),request.getRequestURI());
+        return ResponseEntity.status(status).body(erroResponse);
+    }
+
+    @ExceptionHandler(RoomException.class)
+    public ResponseEntity<ErroResponse> roomErro(RoomException e, HttpServletRequest request){
+        HttpStatus status = HttpStatus.BAD_REQUEST;
         ErroResponse erroResponse = new ErroResponse(Instant.now(),status.value(),e.getMessage(),request.getRequestURI());
         return ResponseEntity.status(status).body(erroResponse);
     }
