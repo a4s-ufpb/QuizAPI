@@ -14,8 +14,6 @@ public interface StatisticRepository extends JpaRepository<StatisticPerConclusio
     Page<StatisticPerConclusion> findByCreatorId(Pageable pageable, UUID creatorId);
     Page<StatisticPerConclusion> findByCreatorIdAndStudentName(Pageable pageable, UUID creatorId, String studentName);
     Page<StatisticPerConclusion> findByCreatorIdAndThemeName(Pageable pageable, UUID creatorId, String themeName);
-    Page<StatisticPerConclusion> findByCreatorIdAndStudentNameAndThemeName(Pageable pageable, UUID creatorId, String studentName, String themeName);
-
     // 2. Buscar por creatorId e intervalo de datas
     @Query("SELECT s FROM tb_statistic s WHERE s.creatorId = :creatorId AND s.date BETWEEN :startDate AND :endDate")
     Page<StatisticPerConclusion> findByCreatorIdAndDateRange(

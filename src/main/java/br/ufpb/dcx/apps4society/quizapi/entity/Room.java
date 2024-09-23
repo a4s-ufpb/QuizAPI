@@ -1,6 +1,5 @@
 package br.ufpb.dcx.apps4society.quizapi.entity;
 
-import br.ufpb.dcx.apps4society.quizapi.dto.room.Player;
 import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
 import jakarta.persistence.*;
 
