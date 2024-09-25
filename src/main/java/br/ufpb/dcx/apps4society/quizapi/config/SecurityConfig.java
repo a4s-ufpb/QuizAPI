@@ -9,6 +9,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,11 +29,11 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> {
-                    request.requestMatchers("/", "/swagger-resources/**", "/swagger-ui/**", "/v3/api-docs/**", "/h2/**").permitAll();
+                    request.requestMatchers("/", "/swagger-resources/**", "/swagger-ui/**", "/v3/api-docs/**", "/h2/**", "/ws/**").permitAll();
                     request.requestMatchers(HttpMethod.GET,"/v1/theme/**").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/question/quiz/**").permitAll();
                     request.requestMatchers(HttpMethod.POST,"/v1/user/**").permitAll();
