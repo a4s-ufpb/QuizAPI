@@ -69,6 +69,10 @@ public class RoomService {
             throw new RoomException("O jogador já está na sala!");
         }
 
+        if (room.isStarted()) {
+            throw new RoomException("A sala já foi iniciada!");
+        }
+
         room.addPlayer(player);
         roomRepository.save(room);
 
