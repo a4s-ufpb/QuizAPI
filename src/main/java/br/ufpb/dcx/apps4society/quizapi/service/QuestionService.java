@@ -41,7 +41,7 @@ public class QuestionService {
         Theme theme = themeRepository.findById(idTheme)
                 .orElseThrow(()-> new ThemeNotFoundException("Tema não encontrado"));
 
-        if (!theme.getCreator().equals(creator)){
+        if (creator.userNotHavePermission(theme.getCreator())){
             throw new UserNotHavePermissionException("Você não tem permissão para cadastrar questões nesse Tema");
         }
 
