@@ -20,26 +20,22 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/join-room")
-    @SendTo("/topic/room")
     public RoomResponse joinRoom(UUID roomId, UUID playerId) {
         return roomService.joinRoom(roomId, playerId);
     }
 
     @MessageMapping("/quit-room")
-    @SendTo("/topic/room")
     public RoomResponse quitRoom(UUID roomId, UUID playerId) {
         roomService.quitRoom(roomId, playerId);
         return roomService.findRoomById(roomId);
     }
 
     @MessageMapping("/select-quiz")
-    @SendTo("/topic/room")
     public RoomResponse selectQuiz(UUID roomId, Long quizId) {
         return roomService.selectQuiz(roomId, quizId);
     }
 
     @MessageMapping("/start-quiz")
-    @SendTo("/topic/room")
     public RoomResponse startQuiz(UUID roomId) {
         return roomService.startQuiz(roomId);
     }

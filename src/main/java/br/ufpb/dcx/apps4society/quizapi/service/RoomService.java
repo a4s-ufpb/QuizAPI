@@ -9,6 +9,7 @@ import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.RoomException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.RoomNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotFoundException;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -43,9 +44,16 @@ public class RoomService {
         return response;
     }
 
-    public void deleteRoom(UUID roomId) {
+    public void deleteRoom(UUID roomId, UUID creatorId) throws UserNotHavePermissionException {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RoomNotFoundException("Sala não encontrada"));
+
+        User creator = userRepository.findById(creatorId)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+
+        if (creator.userNotHavePermission(room.getCreator())) {
+            throw new UserNotHavePermissionException("Você não tem permissão para fechar essa sala!");
+        }
 
         roomRepository.delete(room);
     }

@@ -2,8 +2,8 @@ package br.ufpb.dcx.apps4society.quizapi.controller;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
-import br.ufpb.dcx.apps4society.quizapi.entity.Room;
 import br.ufpb.dcx.apps4society.quizapi.service.RoomService;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,9 +24,9 @@ public class RoomController {
         return ResponseEntity.status(201).body(roomService.createRoom(roomRequest));
     }
 
-    @DeleteMapping("/{roomId}")
-    public ResponseEntity<Void> deleteRoom(@PathVariable UUID roomId) {
-        roomService.deleteRoom(roomId);
+    @DeleteMapping("/{roomId}/{creatorId}")
+    public ResponseEntity<Void> deleteRoom(@PathVariable UUID roomId, @PathVariable UUID creatorId) throws UserNotHavePermissionException {
+        roomService.deleteRoom(roomId, creatorId);
         return ResponseEntity.noContent().build();
     }
 
