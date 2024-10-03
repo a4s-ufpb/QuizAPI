@@ -1,6 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
+import br.ufpb.dcx.apps4society.quizapi.dto.response.Usernames;
 import br.ufpb.dcx.apps4society.quizapi.service.ResponseService;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
@@ -128,5 +129,16 @@ public class ResponseController {
     public ResponseEntity<Void> removeResponse(@PathVariable Long id, @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
         service.removeResponse(id, token);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(tags = "Response", summary = "Find Usernames by Creator", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Usernames.class)))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/usernames/{creatorId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Usernames>> findUsernamesByCreator(@PathVariable UUID creatorId){
+        return ResponseEntity.ok(service.findUsernamesByCreator(creatorId));
     }
 }

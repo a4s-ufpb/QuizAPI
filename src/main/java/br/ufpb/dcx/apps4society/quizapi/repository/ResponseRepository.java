@@ -14,6 +14,7 @@ import java.util.UUID;
 public interface ResponseRepository extends JpaRepository<Response,Long> {
     Page<Response> findByUser(Pageable pageable, User user);
     Page<Response> findByQuestionCreator(Pageable pageable, User creator);
+    List<Response> findByQuestionCreatorUuid(UUID creatorId);
     @Query(nativeQuery = true, value = """
             SELECT r.* FROM tb_response r
             JOIN tb_question q on r.question_id = q.id

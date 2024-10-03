@@ -1,6 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
+import br.ufpb.dcx.apps4society.quizapi.dto.response.Usernames;
 import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.AlternativeRepository;
@@ -18,7 +19,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -150,6 +153,20 @@ public class ResponseService {
         }
 
         return responseStatisticDTOS;
+    }
+
+    public List<Usernames> findUsernamesByCreator(UUID creatorId) {
+        userRepository.findById(creatorId)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado!"));
+
+        Set<Usernames> usernames = new HashSet<>();
+
+        return responseRepository
+                .findByQuestionCreatorUuid(creatorId)
+                .stream()
+                .map(response -> new Usernames(response.getUser().getName()))
+                .filter(usernames::add)
+                .toList();
     }
 
     public User findUserByToken(String token) {
