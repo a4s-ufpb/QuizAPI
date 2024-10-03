@@ -2,6 +2,8 @@ package br.ufpb.dcx.apps4society.quizapi.controller;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticResponse;
+import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StudentName;
+import br.ufpb.dcx.apps4society.quizapi.dto.statistic.ThemeName;
 import br.ufpb.dcx.apps4society.quizapi.service.StatisticService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -18,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -56,5 +59,27 @@ public class StatisticController {
                                                                              @PathVariable UUID creatorId) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(statisticService.findAllStatisticsByCreator(pageable, creatorId, studentName, themeName, startDate, endDate));
+    }
+
+    @Operation(tags = "Statistic", summary = "Find Distinct Theme Names By Creator", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = StatisticResponse.class)))),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Forbidden", responseCode = "403", content = @Content()),
+    })
+    @GetMapping(value = "/theme/{creatorId}")
+    public ResponseEntity<List<ThemeName>> findDistinctThemeNameByCreatorId(@PathVariable UUID creatorId) {
+        return ResponseEntity.ok(statisticService.findDistinctThemeNameByCreatorId(creatorId));
+    }
+
+    @Operation(tags = "Statistic", summary = "Find Distinct Student Names By Creator", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = StatisticResponse.class)))),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Forbidden", responseCode = "403", content = @Content()),
+    })
+    @GetMapping(value = "/student/{creatorId}")
+    public ResponseEntity<List<StudentName>> findDistinctStudentNameByCreatorId(@PathVariable UUID creatorId) {
+        return ResponseEntity.ok(statisticService.findDistinctStudentNameByCreatorId(creatorId));
     }
 }

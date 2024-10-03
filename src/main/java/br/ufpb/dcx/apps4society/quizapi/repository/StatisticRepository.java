@@ -8,10 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public interface StatisticRepository extends JpaRepository<StatisticPerConclusion, Long> {
     Page<StatisticPerConclusion> findByCreatorId(Pageable pageable, UUID creatorId);
+    List<StatisticPerConclusion> findByCreatorId(UUID creatorId);
     Page<StatisticPerConclusion> findByCreatorIdAndStudentName(Pageable pageable, UUID creatorId, String studentName);
     Page<StatisticPerConclusion> findByCreatorIdAndThemeName(Pageable pageable, UUID creatorId, String themeName);
     // 2. Buscar por creatorId e intervalo de datas
@@ -52,5 +54,13 @@ public interface StatisticRepository extends JpaRepository<StatisticPerConclusio
             @Param("studentName") String studentName,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
+    );
+
+    @Query("SELECT s FROM tb_statistic s WHERE s.creatorId = :creatorId AND s.themeName = :themeName AND s.studentName = :studentName")
+    Page<StatisticPerConclusion> findByCreatorIdAndThemeNameAndStudentName(
+            Pageable pageable,
+            @Param("creatorId") UUID creatorId,
+            @Param("themeName") String themeName,
+            @Param("studentName") String studentName
     );
 }

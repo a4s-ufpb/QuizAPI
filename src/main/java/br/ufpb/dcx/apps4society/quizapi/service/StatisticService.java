@@ -2,6 +2,8 @@ package br.ufpb.dcx.apps4society.quizapi.service;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticResponse;
+import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StudentName;
+import br.ufpb.dcx.apps4society.quizapi.dto.statistic.ThemeName;
 import br.ufpb.dcx.apps4society.quizapi.entity.StatisticPerConclusion;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
 import br.ufpb.dcx.apps4society.quizapi.repository.StatisticRepository;
@@ -12,6 +14,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -65,6 +70,9 @@ public class StatisticService {
         } else if (hasDateRange) {
             // Buscar por creatorId e intervalo de datas
             statistic = statisticRepository.findByCreatorIdAndDateRange(pageable, creatorId, startDate, endDate);
+        } else if (hasStudentName && hasThemeName && !hasDateRange) {
+            // Buscar por creatorId, themeName, studentName
+            statistic = statisticRepository.findByCreatorIdAndThemeNameAndStudentName(pageable, creatorId, themeName, studentName);
         } else {
             // Buscar apenas por creatorId
             statistic = statisticRepository.findByCreatorId(pageable, creatorId);
@@ -72,5 +80,28 @@ public class StatisticService {
 
         return statistic.map(StatisticPerConclusion::entityToResponse);
     }
+
+    public List<StudentName> findDistinctStudentNameByCreatorId(UUID creatorId) {
+        Set<StudentName> seenThemesAndStudents = new HashSet<>();
+
+        return statisticRepository
+                .findByCreatorId(creatorId)
+                .stream()
+                .map(sts -> new StudentName(sts.getStudentName()))
+                .filter(seenThemesAndStudents::add)
+                .toList();
+    }
+
+    public List<ThemeName> findDistinctThemeNameByCreatorId(UUID creatorId) {
+        Set<ThemeName> seenThemesAndStudents = new HashSet<>();
+
+        return statisticRepository
+                .findByCreatorId(creatorId)
+                .stream()
+                .map(sts -> new ThemeName(sts.getThemeName()))
+                .filter(seenThemesAndStudents::add)
+                .toList();
+    }
+
 
 }
