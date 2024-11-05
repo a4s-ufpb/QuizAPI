@@ -1,6 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
+import br.ufpb.dcx.apps4society.quizapi.dto.response.Themes;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.Usernames;
 import br.ufpb.dcx.apps4society.quizapi.service.ResponseService;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
@@ -48,19 +49,6 @@ public class ResponseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.insertResponse(idUser, idQuestion, idAlternative));
     }
 
-    @Operation(tags = "Response", summary = "Find All Responses", responses ={
-            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
-    } )
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Page<ResponseDTO>> findAllResponses(@RequestParam(value = "page", defaultValue = "0") Integer page,
-                                                              @RequestParam(value = "size", defaultValue = "20") Integer size){
-        Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findAllResponses(pageable));
-    }
-
     @Operation(tags = "Response", summary = "Find Responses by User", responses ={
             @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
@@ -95,15 +83,16 @@ public class ResponseController {
             @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
             @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
     } )
-    @GetMapping(value = "/username/date")
+    @GetMapping(value = "/query")
     public ResponseEntity<Page<ResponseDTO>> findResponsesByUsernameOrDate(@RequestParam(value = "page", defaultValue = "0") Integer page,
                                                                            @RequestParam(value = "size", defaultValue = "20") Integer size,
                                                                            @RequestParam(value = "currentDate", defaultValue = "") LocalDate currentDate,
                                                                            @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
                                                                            @RequestParam(value = "username", defaultValue = "") String username,
+                                                                           @RequestParam(value = "theme", defaultValue = "") String theme,
                                                                            @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findResponsesByUserNameOrDate(pageable, token, username, currentDate, finalDate));
+        return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeName(pageable, token, username, theme, currentDate, finalDate));
     }
 
     @Operation(tags = "Response", summary = "Find Responses Statistics", responses ={
@@ -140,5 +129,16 @@ public class ResponseController {
     @GetMapping(value = "/usernames/{creatorId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<Usernames>> findUsernamesByCreator(@PathVariable UUID creatorId){
         return ResponseEntity.ok(service.findUsernamesByCreator(creatorId));
+    }
+
+    @Operation(tags = "Response", summary = "Find Theme Names by Creator", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Usernames.class)))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/themes/{creatorId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Themes>> findThemesByCreator(@PathVariable UUID creatorId){
+        return ResponseEntity.ok(service.findThemesByCreator(creatorId));
     }
 }

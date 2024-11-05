@@ -38,8 +38,8 @@ public class SecurityConfig {
                     request.requestMatchers(HttpMethod.GET, "/v1/question/quiz/**").permitAll();
                     request.requestMatchers(HttpMethod.POST,"/v1/user/**").permitAll();
                     request.requestMatchers(HttpMethod.POST, "/v1/statistic").permitAll();
-                    request.requestMatchers(HttpMethod.GET, "/v1/theme/creator").authenticated();
-                    request.requestMatchers(HttpMethod.GET, "/v1/response").hasRole("ADMIN").anyRequest().authenticated();
+                    request.requestMatchers(HttpMethod.GET, "/v1/theme/creator").authenticated()
+                            .anyRequest().authenticated();
                 })
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

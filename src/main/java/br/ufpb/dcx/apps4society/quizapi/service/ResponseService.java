@@ -1,6 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
+import br.ufpb.dcx.apps4society.quizapi.dto.response.Themes;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.Usernames;
 import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
@@ -19,10 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class ResponseService {
@@ -74,17 +72,6 @@ public class ResponseService {
         responseRepository.delete(response);
     }
 
-
-    public Page<ResponseDTO> findAllResponses(Pageable pageable){
-        Page<Response> responses = responseRepository.findAll(pageable);
-
-        if (responses.isEmpty()){
-            throw new ResponseNotFoundException("Nenhuma resposta foi cadastrada");
-        }
-
-        return responses.map(Response::entityToResponse);
-    }
-
     public Page<ResponseDTO> findResponsesByUser(Pageable pageable, String token){
         User loggedUser = findUserByToken(token);
 
@@ -109,23 +96,39 @@ public class ResponseService {
         return responses.map(Response::entityToResponse);
     }
 
-    public Page<ResponseDTO> findResponsesByUserNameOrDate(Pageable pageable, String token, String name,
-                                                                       LocalDate currentDate, LocalDate finalDate) {
+    public Page<ResponseDTO> findResponsesByUserNameOrDateOrThemeName(Pageable pageable, String token, String name, String themeName,
+                                                                      LocalDate currentDate, LocalDate finalDate) {
         User loggedUser = findUserByToken(token);
-
+        UUID creatorUuid = loggedUser.getUuid();
         Page<Response> responses;
 
-        if (!name.isBlank() && currentDate == null && finalDate == null) {
-            responses = responseRepository.findByQuestionCreatorAndUserName(pageable, loggedUser.getUuid(), name);
-        } else if (name.isBlank() && currentDate != null && finalDate != null) {
-            responses = responseRepository.findByDateTime(pageable, loggedUser.getUuid(), currentDate, finalDate);
-        } else if (!name.isBlank() && currentDate != null && finalDate != null) {
-            responses = responseRepository.findByDateTimeAndUserName(pageable, loggedUser.getUuid(), name, currentDate, finalDate);
+        if (!name.isBlank() && currentDate == null && finalDate == null && themeName.isBlank()) {
+            // Busca apenas pelo nome de usuário
+            responses = responseRepository.findByQuestionCreatorAndUserName(pageable, creatorUuid, name);
+        } else if (name.isBlank() && currentDate != null && finalDate != null && themeName.isBlank()) {
+            // Busca apenas pelo intervalo de datas
+            responses = responseRepository.findByDateTime(pageable, creatorUuid, currentDate, finalDate);
+        } else if (!name.isBlank() && currentDate != null && finalDate != null && themeName.isBlank()) {
+            // Busca pelo intervalo de datas e nome de usuário
+            responses = responseRepository.findByDateTimeAndUserName(pageable, creatorUuid, name, currentDate, finalDate);
+        } else if (name.isBlank() && currentDate == null && finalDate == null && !themeName.isBlank()) {
+            // Busca apenas pelo nome do tema
+            responses = responseRepository.findByQuestionCreatorAndThemeName(pageable, creatorUuid, themeName);
+        } else if (!name.isBlank() && !themeName.isBlank() && currentDate == null && finalDate == null) {
+            // Busca pelo nome de usuário e nome do tema
+            responses = responseRepository.findByQuestionCreatorUserNameAndThemeName(pageable, creatorUuid, name, themeName);
+        } else if (name.isBlank() && !themeName.isBlank() && currentDate != null && finalDate != null) {
+            // Busca pelo intervalo de datas e nome do tema
+            responses = responseRepository.findByDateTimeAndThemeName(pageable, creatorUuid, themeName, currentDate, finalDate);
+        } else if (!name.isBlank() && !themeName.isBlank() && currentDate != null && finalDate != null) {
+            // Busca pelo intervalo de datas, nome de usuário e nome do tema
+            responses = responseRepository.findByDateTimeAndUserNameAndThemeName(pageable, creatorUuid, name, themeName, currentDate, finalDate);
         } else {
+            // Busca apenas pelo criador (caso nenhum filtro específico seja preenchido)
             responses = responseRepository.findByQuestionCreator(pageable, loggedUser);
         }
 
-        if (responses.isEmpty()){
+        if (responses.isEmpty()) {
             throw new ResponseNotFoundException("Nenhuma resposta cadastrada!");
         }
 
@@ -164,8 +167,28 @@ public class ResponseService {
         return responseRepository
                 .findByQuestionCreatorUuid(creatorId)
                 .stream()
-                .map(response -> new Usernames(response.getUser().getName()))
+                .map(response -> new Usernames(
+                        response.getUser().getName()
+                ))
                 .filter(usernames::add)
+                .sorted(Comparator.comparing(username -> username.username().toLowerCase()))
+                .toList();
+    }
+
+    public List<Themes> findThemesByCreator(UUID creatorId) {
+        userRepository.findById(creatorId)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado!"));
+
+        Set<Themes> themes = new HashSet<>();
+
+        return responseRepository
+                .findByQuestionCreatorUuid(creatorId)
+                .stream()
+                .map(response -> new Themes(
+                        response.getQuestion().getTheme().getName()
+                ))
+                .filter(themes::add)
+                .sorted(Comparator.comparing(theme -> theme.themeName().toLowerCase()))
                 .toList();
     }
 

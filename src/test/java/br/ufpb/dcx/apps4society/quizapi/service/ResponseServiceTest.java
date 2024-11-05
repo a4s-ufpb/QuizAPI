@@ -129,34 +129,6 @@ class ResponseServiceTest {
     }
 
     @Test
-    void findAllResponses() {
-        Pageable pageable = mock(Pageable.class);
-
-        List<Response> responseList = mockResponse.mockList(5);
-        Page<Response> responsePage = new PageImpl<>(responseList);
-        Mockito.lenient().when(responseRepository.findAll(pageable)).thenReturn(responsePage);
-
-        Page<ResponseDTO> result = responseService.findAllResponses(pageable);
-
-        assertEquals(responseList.size(), result.getTotalElements());
-    }
-
-    @Test
-    void findAllResponsesNotFound() {
-        Pageable pageable = mock(Pageable.class);
-
-        List<Response> responseList = new ArrayList<>();
-        Page<Response> responsePage = new PageImpl<>(responseList);
-        Mockito.lenient().when(responseRepository.findAll(pageable)).thenReturn(responsePage);
-
-        Exception e = assertThrows(ResponseNotFoundException.class, () ->{
-            responseService.findAllResponses(pageable);
-        });
-
-        assertEquals(e.getMessage(), Messages.RESPONSE_NOT_FOUND);
-    }
-
-    @Test
     void findResponsesByUser() {
         User user = mockUser.mockEntity(1);
 
