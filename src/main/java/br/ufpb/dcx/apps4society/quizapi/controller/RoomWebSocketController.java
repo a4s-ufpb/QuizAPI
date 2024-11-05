@@ -1,6 +1,9 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.room.RoomResponse;
+import br.ufpb.dcx.apps4society.quizapi.dto.room.ws.RoomAndPlayerId;
+import br.ufpb.dcx.apps4society.quizapi.dto.room.ws.SelectQuizRequest;
+import br.ufpb.dcx.apps4society.quizapi.dto.room.ws.StartQuizRequest;
 import br.ufpb.dcx.apps4society.quizapi.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,23 +23,23 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/join-room")
-    public RoomResponse joinRoom(UUID roomId, UUID playerId) {
-        return roomService.joinRoom(roomId, playerId);
+    public RoomResponse joinRoom(RoomAndPlayerId joinRoomRequest) {
+        return roomService.joinRoom(joinRoomRequest.roomId(), joinRoomRequest.playerId());
     }
 
     @MessageMapping("/quit-room")
-    public RoomResponse quitRoom(UUID roomId, UUID playerId) {
-        roomService.quitRoom(roomId, playerId);
-        return roomService.findRoomById(roomId);
+    public RoomResponse quitRoom(RoomAndPlayerId quitRoomRequest) {
+        roomService.quitRoom(quitRoomRequest.roomId(), quitRoomRequest.playerId());
+        return roomService.findRoomById(quitRoomRequest.roomId());
     }
 
     @MessageMapping("/select-quiz")
-    public RoomResponse selectQuiz(UUID roomId, Long quizId) {
-        return roomService.selectQuiz(roomId, quizId);
+    public RoomResponse selectQuiz(SelectQuizRequest selectQuizRequest) {
+        return roomService.selectQuiz(selectQuizRequest.roomId(), selectQuizRequest.quizId());
     }
 
     @MessageMapping("/start-quiz")
-    public RoomResponse startQuiz(UUID roomId) {
-        return roomService.startQuiz(roomId);
+    public RoomResponse startQuiz(StartQuizRequest startQuizRequest) {
+        return roomService.startQuiz(startQuizRequest.roomId());
     }
 }
