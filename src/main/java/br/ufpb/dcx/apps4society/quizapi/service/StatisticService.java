@@ -14,10 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class StatisticService {
@@ -89,6 +86,7 @@ public class StatisticService {
                 .stream()
                 .map(sts -> new StudentName(sts.getStudentName()))
                 .filter(seenThemesAndStudents::add)
+                .sorted(Comparator.comparing(student -> student.studentName().toLowerCase()))
                 .toList();
     }
 
@@ -100,6 +98,7 @@ public class StatisticService {
                 .stream()
                 .map(sts -> new ThemeName(sts.getThemeName()))
                 .filter(seenThemesAndStudents::add)
+                .sorted(Comparator.comparing(theme -> theme.themeName().toLowerCase()))
                 .toList();
     }
 
