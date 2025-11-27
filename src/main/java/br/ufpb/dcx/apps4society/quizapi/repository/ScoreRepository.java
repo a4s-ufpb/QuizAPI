@@ -10,8 +10,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query(nativeQuery = true, value = """
             SELECT * FROM tb_score
             WHERE theme_id = :themeId
-            ORDER BY result DESC
-            LIMIT 20;
+            ORDER BY result DESC;
             """)
     List<Score> findByTheme(Long themeId);
 }

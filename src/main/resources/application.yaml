@@ -1,12 +1,12 @@
 spring:
   profiles:
-    active: ${APP_PROFILE}
+    active: ${APP_PROFILE:test}
   output:
     ansi:
       enabled: always
 app:
-  version: ${APP_VERSION}
-  secret: ${APP_SECRET}
+  version: ${APP_VERSION:1.0}
+  secret: ${APP_SECRET:secret}
 springdoc:
   pathsToMatch:
     - /v1/**
