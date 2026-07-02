@@ -32,7 +32,7 @@ public class MockQuestion implements MockInterface<Question, QuestionRequest>{
     @Override
     public QuestionRequest mockRequest(Integer num) {
         return new QuestionRequest("Question",
-                "http://imagem.com");
+                "http://imagem.com", null, null, null);
     }
 
     public List<Question> mockList(Integer size){
@@ -44,6 +44,6 @@ public class MockQuestion implements MockInterface<Question, QuestionRequest>{
     }
 
     public QuestionUpdate mockQuestionUpdate(){
-        return new QuestionUpdate("Novo titulo", "http://nova.com");
+        return new QuestionUpdate("Novo titulo", "http://nova.com", null, null, null);
     }
 }

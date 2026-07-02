@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> {
                     request.requestMatchers("/", "/swagger-resources/**", "/swagger-ui/**", "/v3/api-docs/**", "/h2/**", "/ws/**").permitAll();
+                    request.requestMatchers("/v1/game/**").permitAll();
                     request.requestMatchers(HttpMethod.GET,"/v1/theme/**").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/question/quiz/**").permitAll();
                     request.requestMatchers(HttpMethod.POST,"/v1/user/**").permitAll();

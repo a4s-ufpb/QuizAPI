@@ -49,6 +49,8 @@ public class MockAlternative implements MockInterface<Alternative, AlternativeRe
                 new AlternativeRequest("alt 2", false),
                 new AlternativeRequest("alt 3", false),
                 new AlternativeRequest("alt 4", false),
+                new AlternativeRequest("alt 5", false),
+                new AlternativeRequest("alt 6", false),
         };
     }
 
@@ -57,8 +59,10 @@ public class MockAlternative implements MockInterface<Alternative, AlternativeRe
                 new AlternativeRequest("alt 1", false),
                 new AlternativeRequest("alt 2", false),
                 new AlternativeRequest("alt 3", false),
-                new AlternativeRequest("alt 4", true),
-                new AlternativeRequest("alt 4", false)
+                new AlternativeRequest("alt 4", false),
+                new AlternativeRequest("alt 5", false),
+                new AlternativeRequest("alt 6", true),
+                new AlternativeRequest("alt 7", false)
         };
     }
 

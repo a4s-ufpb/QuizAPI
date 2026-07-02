@@ -9,9 +9,11 @@ import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
 import br.ufpb.dcx.apps4society.quizapi.repository.QuestionRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.ImageSizeLimitExceededException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.QuestionNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
+import br.ufpb.dcx.apps4society.quizapi.util.ImageValidator;
 import br.ufpb.dcx.apps4society.quizapi.util.Messages;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -35,7 +37,7 @@ public class QuestionService {
         this.userService = userService;
     }
 
-    public QuestionResponse insertQuestion(QuestionRequest questionRequest, Long idTheme, String token) throws UserNotHavePermissionException {
+    public QuestionResponse insertQuestion(QuestionRequest questionRequest, Long idTheme, String token) throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         User creator = userService.findUserByToken(token);
 
         Theme theme = themeRepository.findById(idTheme)
@@ -44,6 +46,8 @@ public class QuestionService {
         if (creator.userNotHavePermission(theme.getCreator())){
             throw new UserNotHavePermissionException("Você não tem permissão para cadastrar questões nesse Tema");
         }
+
+        validateImages(questionRequest.imageBase64One(), questionRequest.imageBase64Two());
 
         Question question = new Question(questionRequest, theme, creator);
         theme.addQuestion(question);
@@ -131,7 +135,7 @@ public class QuestionService {
         return questions.stream().map(Question::entityToResponse).toList();
     }
 
-    public QuestionResponse updateQuestion(Long id, QuestionUpdate questionUpdate, String token) throws UserNotHavePermissionException {
+    public QuestionResponse updateQuestion(Long id, QuestionUpdate questionUpdate, String token) throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         User user = userService.findUserByToken(token);
 
         Question question = questionRepository.findById(id)
@@ -140,6 +144,8 @@ public class QuestionService {
         if (user.userNotHavePermission(question.getCreator())){
             throw new UserNotHavePermissionException("Usuário não tem permissão para atualizar essa questão");
         }
+
+        validateImages(questionUpdate.imageBase64One(), questionUpdate.imageBase64Two());
 
         updateData(question, questionUpdate);
         questionRepository.save(question);
@@ -150,6 +156,21 @@ public class QuestionService {
     private void updateData(Question question, QuestionUpdate questionUpdate){
         question.setTitle(questionUpdate.title());
         question.setImageUrl(questionUpdate.imageUrl());
+        question.setImageBase64One(questionUpdate.imageBase64One());
+        question.setImageBase64Two(questionUpdate.imageBase64Two());
+        question.setImagesOrder(questionUpdate.imagesOrder());
+    }
+
+    private void validateImages(String imageBase64One, String imageBase64Two) throws ImageSizeLimitExceededException {
+        int sizeOne = ImageValidator.decodedSizeInBytes(imageBase64One);
+        int sizeTwo = ImageValidator.decodedSizeInBytes(imageBase64Two);
+
+        if (sizeOne > ImageValidator.MAX_IMAGE_SIZE_BYTES || sizeTwo > ImageValidator.MAX_IMAGE_SIZE_BYTES) {
+            throw new ImageSizeLimitExceededException("Cada imagem enviada deve ter no máximo 2MB");
+        }
+        if (sizeOne + sizeTwo > ImageValidator.MAX_TOTAL_IMAGES_SIZE_BYTES) {
+            throw new ImageSizeLimitExceededException("O total das imagens enviadas deve ser de no máximo 4MB");
+        }
     }
 
     public List<QuestionResponse> find10QuestionsByThemeIdAndCreatorId(Long idTheme, String token){

@@ -64,7 +64,7 @@ class QuestionControllerTest extends QuizApplicationTests {
 
         ThemeResponse themeResponse = ThemeRequestUtil.post(mockTheme.mockRequest(1), token);
 
-        QuestionRequest questionRequest = new QuestionRequest("title", "");
+        QuestionRequest questionRequest = new QuestionRequest("title", "", null, null, null);
 
         QuestionResponse questionResponse = given()
                 .header("Authorization", "Bearer " + token)
@@ -96,7 +96,7 @@ class QuestionControllerTest extends QuizApplicationTests {
 
         ThemeResponse themeResponse = ThemeRequestUtil.post(mockTheme.mockRequest(1), token);
 
-        QuestionRequest questionRequest = new QuestionRequest("", "http://image.com");
+        QuestionRequest questionRequest = new QuestionRequest("", "http://image.com", null, null, null);
 
         given()
                 .header("Authorization", "Bearer " + token)
@@ -400,7 +400,7 @@ class QuestionControllerTest extends QuizApplicationTests {
 
         ThemeResponse themeResponse = ThemeRequestUtil.post(mockTheme.mockRequest(1), token);
         QuestionResponse questionResponse = QuestionRequestUtil.post(mockQuestion.mockRequest(1), token, themeResponse.id());
-        QuestionUpdate questionUpdate = new QuestionUpdate("Novo titulo", "");
+        QuestionUpdate questionUpdate = new QuestionUpdate("Novo titulo", "", null, null, null);
 
         QuestionResponse questionReturned = given()
                 .header("Authorization", "Bearer " + token)
@@ -440,7 +440,7 @@ class QuestionControllerTest extends QuizApplicationTests {
 
         ThemeResponse themeResponse = ThemeRequestUtil.post(mockTheme.mockRequest(1), token);
         QuestionResponse questionResponse = QuestionRequestUtil.post(mockQuestion.mockRequest(1), token, themeResponse.id());
-        QuestionUpdate questionUpdate = new QuestionUpdate("Novo titulo", "");
+        QuestionUpdate questionUpdate = new QuestionUpdate("Novo titulo", "", null, null, null);
 
         given()
                 .header("Authorization", "Bearer " + anotherToken)
@@ -518,7 +518,7 @@ class QuestionControllerTest extends QuizApplicationTests {
 
         ThemeResponse themeResponse = ThemeRequestUtil.post(mockTheme.mockRequest(1), token);
         QuestionResponse questionResponse = QuestionRequestUtil.post(mockQuestion.mockRequest(1), token, themeResponse.id());
-        QuestionUpdate questionUpdate = new QuestionUpdate("", "http://image.com");
+        QuestionUpdate questionUpdate = new QuestionUpdate("", "http://image.com", null, null, null);
 
         given()
                 .header("Authorization", "Bearer " + token)

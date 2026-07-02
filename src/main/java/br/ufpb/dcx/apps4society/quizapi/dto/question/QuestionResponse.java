@@ -10,6 +10,9 @@ public record QuestionResponse(
          Long id,
          String title,
          String imageUrl,
+         String imageBase64One,
+         String imageBase64Two,
+         String imagesOrder,
          UUID creatorId,
          ThemeResponse theme,
          List<AlternativeResponse> alternatives) {

@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 public record AlternativeRequest(
         @NotBlank(message = "Campo de resposta não pode ser vazio")
-        @Size(min = 1, max = 100, message = "Número de caracteres inválido")
+        @Size(min = 1, max = 500, message = "Número de caracteres inválido")
         String text,
         @NotNull(message = "Esse campo não pode ser vazio")
         Boolean correct) {

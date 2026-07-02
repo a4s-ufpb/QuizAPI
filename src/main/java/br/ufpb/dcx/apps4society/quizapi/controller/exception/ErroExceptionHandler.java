@@ -129,4 +129,11 @@ public class ErroExceptionHandler {
         ErroResponse erroResponse = new ErroResponse(Instant.now(),status.value(),e.getMessage(),request.getRequestURI());
         return ResponseEntity.status(status).body(erroResponse);
     }
+
+    @ExceptionHandler(ImageSizeLimitExceededException.class)
+    public ResponseEntity<ErroResponse> imageSizeLimitExceededErro(ImageSizeLimitExceededException e, HttpServletRequest request){
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ErroResponse erroResponse = new ErroResponse(Instant.now(),status.value(),e.getMessage(),request.getRequestURI());
+        return ResponseEntity.status(status).body(erroResponse);
+    }
 }

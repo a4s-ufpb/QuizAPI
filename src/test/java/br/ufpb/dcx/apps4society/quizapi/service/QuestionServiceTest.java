@@ -11,6 +11,7 @@ import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.mock.MockUser;
 import br.ufpb.dcx.apps4society.quizapi.repository.QuestionRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.ImageSizeLimitExceededException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.QuestionNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
@@ -55,7 +56,7 @@ class QuestionServiceTest {
     }
 
     @Test
-    void insertQuestion() throws UserNotHavePermissionException {
+    void insertQuestion() throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         QuestionRequest questionRequest = mockQuestion.mockRequest(1);
         User creator = mockUser.mockEntity(1);
         Theme theme = mockTheme.mockEntity(1, creator);
@@ -223,7 +224,7 @@ class QuestionServiceTest {
     }
 
     @Test
-    void updateQuestion() throws UserNotHavePermissionException {
+    void updateQuestion() throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         QuestionUpdate questionUpdate = mockQuestion.mockQuestionUpdate();
         User user = mockUser.mockEntity(1);
         Question question = mockQuestion.mockEntity(1,new Theme(), user);

@@ -90,6 +90,8 @@ class AlternativeServiceTest {
             alternativeService.insertAlternative(alternativeRequest, question.getId());
             alternativeService.insertAlternative(alternativeRequest, question.getId());
             alternativeService.insertAlternative(alternativeRequest, question.getId());
+            alternativeService.insertAlternative(alternativeRequest, question.getId());
+            alternativeService.insertAlternative(alternativeRequest, question.getId());
             alternativeService.insertAlternative(alternativeTrue, question.getId());
             alternativeService.insertAlternative(alternativeTrue, question.getId());
         });
@@ -123,6 +125,8 @@ class AlternativeServiceTest {
         Mockito.lenient().when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
 
         Exception e = assertThrows(FalseAlternativesOnlyException.class, () ->{
+            alternativeService.insertAlternative(alternativeRequest, question.getId());
+            alternativeService.insertAlternative(alternativeRequest, question.getId());
             alternativeService.insertAlternative(alternativeRequest, question.getId());
             alternativeService.insertAlternative(alternativeRequest, question.getId());
             alternativeService.insertAlternative(alternativeRequest, question.getId());

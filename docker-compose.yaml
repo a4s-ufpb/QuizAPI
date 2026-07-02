@@ -1,10 +1,8 @@
-version: '3.5'
-
 services:
 
   db:
     container_name: container-database-quiz
-    image: postgres:16
+    image: postgres:17
     restart: always
     env_file:
       - dev.env

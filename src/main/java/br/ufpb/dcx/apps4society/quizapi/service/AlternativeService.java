@@ -69,7 +69,7 @@ public class AlternativeService {
                 falseAlternatives++;
             }
         }
-        return falseAlternatives == 3;
+        return falseAlternatives == Question.MAXIMUM_NUMBER_OF_ALTERNATIVES - 1;
     }
 
     public void removeAlternative(Long id, String token) throws UserNotHavePermissionException {

@@ -4,6 +4,7 @@ import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionUpdate;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionResponse;
 import br.ufpb.dcx.apps4society.quizapi.service.QuestionService;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.ImageSizeLimitExceededException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -44,7 +45,7 @@ public class QuestionController {
     } )
     @PostMapping(value = "/{idTheme}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<QuestionResponse> insertQuestion(@RequestBody @Valid QuestionRequest questionRequest, @PathVariable Long idTheme,
-                                                           @RequestHeader(value = "Authorization") String token) throws UserNotHavePermissionException {
+                                                           @RequestHeader(value = "Authorization") String token) throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.insertQuestion(questionRequest, idTheme, token));
     }
 
@@ -80,7 +81,7 @@ public class QuestionController {
     } )
     @PatchMapping(value = "/{id}",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<QuestionResponse> updateQuestion(@PathVariable Long id, @RequestBody @Valid QuestionUpdate questionUpdate,
-                                                           @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
+                                                           @RequestHeader("Authorization") String token) throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         return ResponseEntity.ok(service.updateQuestion(id, questionUpdate, token));
     }
 
