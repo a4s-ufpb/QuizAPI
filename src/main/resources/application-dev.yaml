@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    username: ${DEV_USER}
-    url: jdbc:postgresql://${DEV_HOST}:5432/${DEV_DB}
-    password: ${DEV_PASSWORD}
+    username: ${DEV_USER:quiz}
+    url: jdbc:postgresql://${DEV_HOST:localhost}:5432/${DEV_DB:quizdb}
+    password: ${DEV_PASSWORD:quiz123}
   jpa:
     hibernate:
       ddl-auto: update

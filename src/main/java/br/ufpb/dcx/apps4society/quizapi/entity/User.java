@@ -58,7 +58,7 @@ public class User implements UserDetails {
     }
 
     public UserResponse entityToResponse(){
-        return new UserResponse(uuid,name,email);
+        return new UserResponse(uuid,name,email,role);
     }
 
     public void addTheme(Theme theme){
@@ -91,6 +91,10 @@ public class User implements UserDetails {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     @Override

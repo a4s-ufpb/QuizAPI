@@ -1,6 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.entity;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
@@ -19,6 +20,8 @@ public class Response implements Serializable {
     private Question question;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Alternative alternative;
+    @Enumerated(EnumType.STRING)
+    private GameMode gameMode = GameMode.SINGLE_PLAYER;
 
     public Response() {
 
@@ -28,6 +31,13 @@ public class Response implements Serializable {
         this.user = user;
         this.question = question;
         this.alternative = alternative;
+    }
+
+    public Response(User user, Question question, Alternative alternative, GameMode gameMode) {
+        this.user = user;
+        this.question = question;
+        this.alternative = alternative;
+        this.gameMode = gameMode;
     }
 
     public ResponseDTO entityToResponse(){
@@ -40,7 +50,8 @@ public class Response implements Serializable {
                 user.entityToResponse(),
                 question.entityToMinResponse(),
                 alternative.entityToResponse(),
-                questionAlternatives);
+                questionAlternatives,
+                gameMode);
     }
 
     public LocalDate getDateTime() {
@@ -57,5 +68,9 @@ public class Response implements Serializable {
 
     public Alternative getAlternative() {
         return alternative;
+    }
+
+    public GameMode getGameMode() {
+        return gameMode;
     }
 }

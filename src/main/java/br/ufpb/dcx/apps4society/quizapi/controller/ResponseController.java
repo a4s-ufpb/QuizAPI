@@ -1,9 +1,11 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.response.MySummaryDTO;
+import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseItemRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.Themes;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.Usernames;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import br.ufpb.dcx.apps4society.quizapi.service.ResponseService;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
@@ -13,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,6 +53,17 @@ public class ResponseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.insertResponse(idUser, idQuestion, idAlternative));
     }
 
+    @Operation(tags = "Response", summary = "Insert Multiplayer Responses in Batch (todos-contra-todos, usuário logado)", responses ={
+            @ApiResponse(description = "Success", responseCode = "201", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @PostMapping(value = "/multiplayer/batch", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<ResponseDTO>> insertMultiplayerResponses(@RequestBody @Valid List<ResponseItemRequest> items,
+                                                                         @RequestHeader("Authorization") String token){
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.insertMultiplayerResponses(token, items));
+    }
+
     @Operation(tags = "Response", summary = "Find Responses by User", responses ={
             @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
@@ -62,9 +76,10 @@ public class ResponseController {
                                                               @RequestParam(value = "theme", defaultValue = "") String theme,
                                                               @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
                                                               @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
+                                                              @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode,
                                                               @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findMyResponses(pageable, token, theme, startDate, endDate));
+        return ResponseEntity.ok(service.findMyResponses(pageable, token, theme, startDate, endDate, gameMode));
     }
 
     @Operation(tags = "Response", summary = "Find My Response Summary (quizzes finished / correct / wrong)", responses ={
@@ -76,8 +91,9 @@ public class ResponseController {
     public ResponseEntity<MySummaryDTO> findMySummary(@RequestParam(value = "theme", defaultValue = "") String theme,
                                                         @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
                                                         @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
+                                                        @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode,
                                                         @RequestHeader("Authorization") String token){
-        return ResponseEntity.ok(service.findMySummary(token, theme, startDate, endDate));
+        return ResponseEntity.ok(service.findMySummary(token, theme, startDate, endDate, gameMode));
     }
 
     @Operation(tags = "Response", summary = "Find Responses by Question Creator", responses ={
@@ -107,9 +123,10 @@ public class ResponseController {
                                                                            @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
                                                                            @RequestParam(value = "username", defaultValue = "") String username,
                                                                            @RequestParam(value = "theme", defaultValue = "") String theme,
+                                                                           @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode,
                                                                            @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeName(pageable, token, username, theme, currentDate, finalDate));
+        return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeName(pageable, token, username, theme, currentDate, finalDate, gameMode));
     }
 
     @Operation(tags = "Response", summary = "Find Responses by Username or/and Date Without Pagination (for charts)", responses ={
@@ -122,8 +139,9 @@ public class ResponseController {
                                                                                     @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
                                                                                     @RequestParam(value = "username", defaultValue = "") String username,
                                                                                     @RequestParam(value = "theme", defaultValue = "") String theme,
+                                                                                    @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode,
                                                                                     @RequestHeader("Authorization") String token){
-        return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeNameForChart(token, username, theme, currentDate, finalDate));
+        return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeNameForChart(token, username, theme, currentDate, finalDate, gameMode));
     }
 
     @Operation(tags = "Response", summary = "Find Responses Statistics", responses ={
@@ -135,8 +153,9 @@ public class ResponseController {
     @GetMapping(value = "/statistic/{themeName}/{userId}")
     public ResponseEntity<List<ResponseStatisticDTO>> findResponsesStatistics(@RequestHeader("Authorization") String token,
                                                                               @PathVariable String themeName,
-                                                                              @PathVariable UUID userId){
-        return ResponseEntity.ok(service.findStatisticResponse(token,themeName, userId));
+                                                                              @PathVariable UUID userId,
+                                                                              @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode){
+        return ResponseEntity.ok(service.findStatisticResponse(token,themeName, userId, gameMode));
     }
 
     @Operation(tags = "Response", summary = "Remove Response", responses ={

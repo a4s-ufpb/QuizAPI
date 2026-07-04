@@ -2,6 +2,7 @@ package br.ufpb.dcx.apps4society.quizapi.dto.response;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionMinResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.user.UserResponse;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import br.ufpb.dcx.apps4society.quizapi.dto.alternative.AlternativeResponse;
 
@@ -16,6 +17,7 @@ public record ResponseDTO(
         UserResponse user,
         QuestionMinResponse question,
         AlternativeResponse alternative,
-        List<AlternativeResponse> questionAlternatives
+        List<AlternativeResponse> questionAlternatives,
+        GameMode gameMode
 ) {
 }

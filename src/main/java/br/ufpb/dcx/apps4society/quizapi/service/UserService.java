@@ -113,6 +113,22 @@ public class UserService {
         user.setName(userUpdate.name());
     }
 
+    public UserResponse updateUserRole(UUID id, UserRoleUpdate roleUpdate, String token) throws UserNotHavePermissionException {
+        User loggedUser = findUserByToken(token);
+
+        if (loggedUser.getRole() != Role.ADMIN) {
+            throw new UserNotHavePermissionException("Você não tem permissão para alterar o cargo de um usuário");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(Messages.USER_NOT_FOUND));
+
+        user.setRole(roleUpdate.role());
+        userRepository.save(user);
+
+        return user.entityToResponse();
+    }
+
     public void updatePassword(UUID id, UserUpdatePassword userUpdatePassword, String token) throws UserNotHavePermissionException {
         User loggedUser = findUserByToken(token);
 

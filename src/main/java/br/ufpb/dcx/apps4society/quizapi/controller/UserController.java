@@ -119,6 +119,19 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(tags = "User", summary = "Update User Role (Admin Only)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(description = "Bad Request", responseCode = "400", content = @Content()),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @PatchMapping(value = "/role/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserResponse> updateUserRole(@PathVariable UUID id, @RequestBody @Valid UserRoleUpdate userRoleUpdate,
+                                                        @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
+        return ResponseEntity.ok(userService.updateUserRole(id, userRoleUpdate, token));
+    }
+
     @Operation(tags = "User", summary = "Validade User Admin", responses ={
             @ApiResponse(description = "Success", responseCode = "200", content = @Content()),
             @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
