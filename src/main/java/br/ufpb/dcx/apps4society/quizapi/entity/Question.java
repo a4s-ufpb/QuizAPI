@@ -60,7 +60,7 @@ public class Question implements Serializable {
     }
 
     public QuestionMinResponse entityToMinResponse(){
-        return new QuestionMinResponse(id, title,imageUrl,theme.entityToResponse());
+        return new QuestionMinResponse(id, title, imageUrl, imageBase64One, imageBase64Two, imagesOrder, theme.entityToResponse());
     }
 
     public void addAlternative(Alternative alternative) {

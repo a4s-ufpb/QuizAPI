@@ -26,6 +26,7 @@ public class GameRoomService {
     private static final String CODE_ALPHABET = "ABCDEFGHIJKLMNPQRSTUVWXYZ23456789";
     private static final int CODE_LENGTH = 6;
     private static final int RESULT_DELAY_SECONDS = 5;
+    private static final int COUNTDOWN_SECONDS = 3;
     private static final int SCORE_MAX = 1000;
     private static final int SCORE_MIN_CORRECT = 500;
 
@@ -71,13 +72,15 @@ public class GameRoomService {
 
     // ---------- lobby ----------
 
-    public synchronized void join(String code, String playerId, String name) {
+    public synchronized void join(String code, String playerId, String name, String avatar) {
         GameRoom room = requireRoom(code);
         if (room.getStatus() != RoomStatus.LOBBY) {
             sendError(code, "A partida já começou.");
             return;
         }
-        room.getPlayers().computeIfAbsent(playerId, id -> new GamePlayer(id, safeName(name, "Jogador"), false));
+        GamePlayer player = room.getPlayers().computeIfAbsent(playerId,
+                id -> new GamePlayer(id, safeName(name, "Jogador"), false));
+        if (avatar != null) player.setAvatar(avatar);
         broadcastState(room);
     }
 
@@ -88,11 +91,30 @@ public class GameRoomService {
             closeRoom(room);
             return;
         }
-        room.getPlayers().remove(playerId);
+        GamePlayer leaving = room.getPlayers().remove(playerId);
+        if (leaving != null && leaving.isCaptain() && leaving.getTeamId() != null) {
+            promoteNextCaptain(room, leaving.getTeamId());
+        }
         if (room.getStatus() != RoomStatus.LOBBY && room.allActivePlayersAnswered()) {
             endQuestion(room);
         } else {
             broadcastState(room);
+        }
+    }
+
+    /** Promove o próximo membro (por ordem de entrada) da equipe a capitão, ou limpa se ficou vazia. */
+    private void promoteNextCaptain(GameRoom room, String teamId) {
+        Team team = room.getTeams().get(teamId);
+        if (team == null) return;
+        GamePlayer next = room.getPlayers().values().stream()
+                .filter(p -> teamId.equals(p.getTeamId()))
+                .findFirst()
+                .orElse(null);
+        if (next == null) {
+            team.setCaptainId(null);
+        } else {
+            team.setCaptainId(next.getId());
+            next.setCaptain(true);
         }
     }
 
@@ -120,10 +142,78 @@ public class GameRoomService {
     public synchronized void pickTeam(String code, String playerId, String teamId) {
         GameRoom room = requireRoom(code);
         GamePlayer player = room.getPlayers().get(playerId);
-        if (player != null && room.getTeams().containsKey(teamId)) {
-            player.setTeamId(teamId);
-            broadcastState(room);
+        Team team = room.getTeams().get(teamId);
+        if (player == null || team == null) return;
+
+        String previousTeamId = player.getTeamId();
+        boolean wasCaptainOfPrevious = player.isCaptain();
+        player.setTeamId(teamId);
+        player.setCaptain(false);
+
+        if (previousTeamId != null && wasCaptainOfPrevious && !previousTeamId.equals(teamId)) {
+            promoteNextCaptain(room, previousTeamId);
         }
+
+        // Primeiro jogador a entrar na equipe vira capitão.
+        if (team.getCaptainId() == null) {
+            team.setCaptainId(playerId);
+            player.setCaptain(true);
+        }
+        broadcastState(room);
+    }
+
+    public synchronized void createTeam(String code, String playerId, String teamName) {
+        GameRoom room = requireRoom(code);
+        GamePlayer player = room.getPlayers().get(playerId);
+        if (player == null || room.getConfig().roomMode() != RoomMode.TEAM) return;
+        if (teamName == null || teamName.isBlank()) return;
+
+        String previousTeamId = player.getTeamId();
+        boolean wasCaptainOfPrevious = player.isCaptain();
+
+        String teamId = "team-" + UUID.randomUUID().toString().substring(0, 8);
+        Team team = new Team(teamId, teamName.trim());
+        team.setCaptainId(playerId);
+        room.getTeams().put(teamId, team);
+        player.setTeamId(teamId);
+        player.setCaptain(true);
+
+        if (previousTeamId != null && wasCaptainOfPrevious) {
+            promoteNextCaptain(room, previousTeamId);
+        }
+        broadcastState(room);
+    }
+
+    public synchronized void transferCaptain(String code, String playerId, String teamId, String newCaptainId) {
+        GameRoom room = requireRoom(code);
+        Team team = room.getTeams().get(teamId);
+        GamePlayer currentCaptain = room.getPlayers().get(playerId);
+        GamePlayer newCaptain = room.getPlayers().get(newCaptainId);
+        if (team == null || currentCaptain == null || newCaptain == null) return;
+        if (!playerId.equals(team.getCaptainId())) return;
+        if (!teamId.equals(newCaptain.getTeamId())) return;
+
+        currentCaptain.setCaptain(false);
+        newCaptain.setCaptain(true);
+        team.setCaptainId(newCaptainId);
+        broadcastState(room);
+    }
+
+    public synchronized void setAvatar(String code, String playerId, String avatar) {
+        GameRoom room = requireRoom(code);
+        GamePlayer player = room.getPlayers().get(playerId);
+        if (player == null) return;
+        player.setAvatar(avatar);
+        broadcastState(room);
+    }
+
+    public synchronized void setTeamAvatar(String code, String playerId, String teamId, String avatar) {
+        GameRoom room = requireRoom(code);
+        GamePlayer player = room.getPlayers().get(playerId);
+        Team team = room.getTeams().get(teamId);
+        if (player == null || team == null || !teamId.equals(player.getTeamId())) return;
+        team.setAvatar(avatar);
+        broadcastState(room);
     }
 
     public synchronized void changeQuiz(String code, String hostId, Long themeId) {
@@ -184,7 +274,17 @@ public class GameRoomService {
         }
         room.setQuestions(questions);
         room.getPlayers().values().forEach(GamePlayer::resetForNewGame);
-        startQuestion(room, 0);
+
+        messagingTemplate.convertAndSend(topic(room.getCode()), GameEvent.countdown(COUNTDOWN_SECONDS));
+        scheduler.schedule(() -> startFirstQuestionSafely(code), COUNTDOWN_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private void startFirstQuestionSafely(String code) {
+        synchronized (this) {
+            GameRoom room = rooms.get(code);
+            if (room == null || room.getStatus() != RoomStatus.LOBBY) return;
+            startQuestion(room, 0);
+        }
     }
 
     public synchronized void answer(String code, String playerId, Long alternativeId) {
@@ -192,6 +292,7 @@ public class GameRoomService {
         if (room.getStatus() != RoomStatus.IN_QUESTION) return;
         GamePlayer player = room.getPlayers().get(playerId);
         if (player == null || player.isAnsweredCurrent()) return;
+        if (room.getConfig().roomMode() == RoomMode.TEAM && !player.isCaptain()) return;
 
         player.setAnsweredCurrent(true);
         player.setCurrentAnswerId(alternativeId);
@@ -225,6 +326,7 @@ public class GameRoomService {
         int time = room.getConfig().questionTimeSeconds();
         QuestionView view = new QuestionView(
                 question.getId(), question.getTitle(), question.getImageUrl(),
+                question.getImageBase64One(), question.getImageBase64Two(), question.getImagesOrder(),
                 index, room.getQuestions().size(), time, room.getQuestionStartMillis(), alternatives);
 
         messagingTemplate.convertAndSend(topic(room.getCode()), GameEvent.question(view));
@@ -258,7 +360,7 @@ public class GameRoomService {
         boolean last = room.getCurrentIndex() >= room.getQuestions().size() - 1;
         QuestionResultView result = new QuestionResultView(
                 correctId, room.getCurrentIndex(), room.getQuestions().size(), last,
-                scoreboard(room), teamScoreboard(room));
+                scoreboard(room), teamScoreboard(room), playerAnswers(room, correctId));
 
         messagingTemplate.convertAndSend(topic(room.getCode()), GameEvent.result(result));
         broadcastState(room);
@@ -319,6 +421,7 @@ public class GameRoomService {
         Theme theme = themeRepository.findById(themeId).orElse(null);
         room.setThemeId(themeId);
         room.setThemeName(theme != null ? theme.getName() : null);
+        room.setThemeImageUrl(theme != null ? theme.getImageUrl() : null);
     }
 
     private List<Question> loadQuestions(Long themeId, int count) {
@@ -340,10 +443,10 @@ public class GameRoomService {
     private RoomStateResponse toState(GameRoom room) {
         List<RoomStateResponse.PlayerView> players = room.getPlayers().values().stream()
                 .map(p -> new RoomStateResponse.PlayerView(
-                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore()))
+                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain()))
                 .toList();
         return new RoomStateResponse(
-                room.getCode(), room.getHostId(), room.getThemeId(), room.getThemeName(),
+                room.getCode(), room.getHostId(), room.getThemeId(), room.getThemeName(), room.getThemeImageUrl(),
                 room.getConfig(), room.getStatus().name(), players, teamScoreboard(room),
                 room.getCurrentIndex(), room.getQuestions().size());
     }
@@ -353,7 +456,16 @@ public class GameRoomService {
                 .filter(p -> !p.isHost() || room.getPlayers().size() == 1)
                 .sorted(Comparator.comparingInt(GamePlayer::getScore).reversed())
                 .map(p -> new RoomStateResponse.PlayerView(
-                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore()))
+                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain()))
+                .toList();
+    }
+
+    private List<QuestionResultView.PlayerAnswerView> playerAnswers(GameRoom room, Long correctId) {
+        return room.getPlayers().values().stream()
+                .filter(p -> !p.isHost() || room.getPlayers().size() == 1)
+                .map(p -> new QuestionResultView.PlayerAnswerView(
+                        p.getId(), p.getName(), p.isAnsweredCurrent(),
+                        p.getCurrentAnswerId() != null && p.getCurrentAnswerId().equals(correctId)))
                 .toList();
     }
 
@@ -362,7 +474,8 @@ public class GameRoomService {
                 .map(t -> new RoomStateResponse.TeamView(t.getId(), t.getName(),
                         room.getPlayers().values().stream()
                                 .filter(p -> t.getId().equals(p.getTeamId()))
-                                .mapToInt(GamePlayer::getScore).sum()))
+                                .mapToInt(GamePlayer::getScore).sum(),
+                        t.getAvatar(), t.getCaptainId()))
                 .toList();
     }
 

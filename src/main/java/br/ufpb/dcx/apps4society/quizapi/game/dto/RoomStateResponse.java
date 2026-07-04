@@ -8,6 +8,7 @@ public record RoomStateResponse(
         String hostId,
         Long themeId,
         String themeName,
+        String themeImageUrl,
         GameConfig config,
         String status,
         List<PlayerView> players,
@@ -21,8 +22,10 @@ public record RoomStateResponse(
             boolean host,
             boolean ready,
             String teamId,
-            int score
+            int score,
+            String avatar,
+            boolean captain
     ) {}
 
-    public record TeamView(String id, String name, int score) {}
+    public record TeamView(String id, String name, int score, String avatar, String captainId) {}
 }

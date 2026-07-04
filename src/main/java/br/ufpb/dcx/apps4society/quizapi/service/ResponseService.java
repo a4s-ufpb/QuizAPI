@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.response.MySummaryDTO;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.Themes;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.Usernames;
@@ -7,6 +8,7 @@ import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.AlternativeRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.QuestionRepository;
+import br.ufpb.dcx.apps4society.quizapi.repository.StatisticRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
 import br.ufpb.dcx.apps4society.quizapi.security.TokenProvider;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.*;
@@ -28,16 +30,18 @@ public class ResponseService {
     private UserRepository userRepository;
     private QuestionRepository questionRepository;
     private AlternativeRepository alternativeRepository;
+    private StatisticRepository statisticRepository;
     private TokenProvider tokenProvider;
 
     @Autowired
     public ResponseService(ResponseRepository responseRepository, UserRepository userRepository,
                            QuestionRepository questionRepository, AlternativeRepository alternativeRepository,
-                           TokenProvider tokenProvider) {
+                           StatisticRepository statisticRepository, TokenProvider tokenProvider) {
         this.responseRepository = responseRepository;
         this.userRepository = userRepository;
         this.questionRepository = questionRepository;
         this.alternativeRepository = alternativeRepository;
+        this.statisticRepository = statisticRepository;
         this.tokenProvider = tokenProvider;
     }
 
@@ -82,6 +86,27 @@ public class ResponseService {
         }
 
         return responses.map(Response::entityToResponse);
+    }
+
+    public Page<ResponseDTO> findMyResponses(Pageable pageable, String token, String themeName,
+                                              LocalDate startDate, LocalDate endDate){
+        User loggedUser = findUserByToken(token);
+        Page<Response> responses = responseRepository.findByUserAndFilters(
+                pageable, loggedUser, themeName, startDate, endDate);
+        return responses.map(Response::entityToResponse);
+    }
+
+    public MySummaryDTO findMySummary(String token, String themeName, LocalDate startDate, LocalDate endDate){
+        User loggedUser = findUserByToken(token);
+
+        long totalCorrect = responseRepository.countByUserAndCorrectAndFilters(
+                loggedUser, true, themeName, startDate, endDate);
+        long totalWrong = responseRepository.countByUserAndCorrectAndFilters(
+                loggedUser, false, themeName, startDate, endDate);
+        long totalQuizzesFinished = statisticRepository.countByStudentNameAndFilters(
+                loggedUser.getName(), themeName, startDate, endDate);
+
+        return new MySummaryDTO(totalQuizzesFinished, totalCorrect, totalWrong);
     }
 
     public Page<ResponseDTO> findResponsesByQuestionCreator(Pageable pageable, String token){
@@ -133,6 +158,17 @@ public class ResponseService {
         }
 
         return responses.map(Response::entityToResponse);
+    }
+
+    public List<ResponseDTO> findResponsesByUserNameOrDateOrThemeNameForChart(String token, String name, String themeName,
+                                                                               LocalDate currentDate, LocalDate finalDate) {
+        Pageable unpaged = Pageable.unpaged();
+        try {
+            return findResponsesByUserNameOrDateOrThemeName(unpaged, token, name, themeName, currentDate, finalDate)
+                    .getContent();
+        } catch (ResponseNotFoundException e) {
+            return List.of();
+        }
     }
 
     public List<ResponseStatisticDTO> findStatisticResponse(String token, String themeName, UUID userId) {

@@ -61,6 +61,21 @@ public class StatisticController {
         return ResponseEntity.ok(statisticService.findAllStatisticsByCreator(pageable, creatorId, studentName, themeName, startDate, endDate));
     }
 
+    @Operation(tags = "Statistic", summary = "Find All Statistics By Creator Without Pagination (for charts)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = StatisticResponse.class)))),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Forbidden", responseCode = "403", content = @Content()),
+    })
+    @GetMapping(value = "/{creatorId}/chart")
+    public ResponseEntity<List<StatisticResponse>> findAllStatisticByCreatorForChart(@RequestParam(value = "studentName", defaultValue = "") String studentName,
+                                                                                      @RequestParam(value = "themeName", defaultValue = "") String themeName,
+                                                                                      @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
+                                                                                      @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
+                                                                                      @PathVariable UUID creatorId) {
+        return ResponseEntity.ok(statisticService.findAllStatisticsByCreatorForChart(creatorId, studentName, themeName, startDate, endDate));
+    }
+
     @Operation(tags = "Statistic", summary = "Find Distinct Theme Names By Creator", responses ={
             @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = StatisticResponse.class)))),
             @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),

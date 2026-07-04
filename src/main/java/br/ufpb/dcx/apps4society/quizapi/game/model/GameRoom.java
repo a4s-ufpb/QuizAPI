@@ -19,6 +19,7 @@ public class GameRoom {
     private GameConfig config;
     private Long themeId;
     private String themeName;
+    private String themeImageUrl;
     private RoomStatus status = RoomStatus.LOBBY;
 
     private final Map<String, GamePlayer> players = new LinkedHashMap<>();
@@ -44,6 +45,14 @@ public class GameRoom {
     }
 
     public boolean allActivePlayersAnswered() {
+        if (config.roomMode() == RoomMode.TEAM) {
+            return teams.values().stream()
+                    .filter(t -> players.values().stream().anyMatch(p -> t.getId().equals(p.getTeamId())))
+                    .allMatch(t -> {
+                        GamePlayer captain = players.get(t.getCaptainId());
+                        return captain != null && captain.isAnsweredCurrent();
+                    });
+        }
         return players.values().stream()
                 .filter(p -> !p.isHost() || players.size() == 1)
                 .allMatch(GamePlayer::isAnsweredCurrent);
@@ -70,6 +79,8 @@ public class GameRoom {
     public void setThemeId(Long themeId) { this.themeId = themeId; }
     public String getThemeName() { return themeName; }
     public void setThemeName(String themeName) { this.themeName = themeName; }
+    public String getThemeImageUrl() { return themeImageUrl; }
+    public void setThemeImageUrl(String themeImageUrl) { this.themeImageUrl = themeImageUrl; }
     public RoomStatus getStatus() { return status; }
     public void setStatus(RoomStatus status) { this.status = status; }
     public Map<String, GamePlayer> getPlayers() { return players; }

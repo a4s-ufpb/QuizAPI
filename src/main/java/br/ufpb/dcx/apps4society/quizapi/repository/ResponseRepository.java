@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,6 +14,25 @@ import java.util.UUID;
 
 public interface ResponseRepository extends JpaRepository<Response,Long> {
     Page<Response> findByUser(Pageable pageable, User user);
+
+    // Respostas do próprio usuário (como jogador), com filtros opcionais de tema e intervalo de datas
+    @Query("SELECT r FROM tb_response r WHERE r.user = :user " +
+            "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
+            "AND (:startDate IS NULL OR r.dateTime >= :startDate) " +
+            "AND (:endDate IS NULL OR r.dateTime <= :endDate)")
+    Page<Response> findByUserAndFilters(Pageable pageable, @Param("user") User user,
+                                         @Param("themeName") String themeName,
+                                         @Param("startDate") LocalDate startDate,
+                                         @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(r) FROM tb_response r WHERE r.user = :user AND r.alternative.correct = :correct " +
+            "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
+            "AND (:startDate IS NULL OR r.dateTime >= :startDate) " +
+            "AND (:endDate IS NULL OR r.dateTime <= :endDate)")
+    long countByUserAndCorrectAndFilters(@Param("user") User user, @Param("correct") boolean correct,
+                                          @Param("themeName") String themeName,
+                                          @Param("startDate") LocalDate startDate,
+                                          @Param("endDate") LocalDate endDate);
     Page<Response> findByQuestionCreator(Pageable pageable, User creator);
     List<Response> findByQuestionCreatorUuid(UUID creatorId);
 

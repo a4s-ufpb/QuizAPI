@@ -14,10 +14,11 @@ public record GameConfig(
         ScoringMode scoringMode,
         AdvanceMode advanceMode,
         Integer questionTimeSeconds,
-        Integer questionCount
+        Integer questionCount,
+        Integer maxPlayersPerTeam
 ) {
     public static GameConfig defaults() {
-        return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.HOST, 20, 10);
+        return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.HOST, 20, 10, null);
     }
 
     /** Preenche campos nulos com os defaults e aplica limites saudáveis. */
@@ -25,14 +26,18 @@ public record GameConfig(
         GameConfig d = defaults();
         int time = questionTimeSeconds != null ? questionTimeSeconds : d.questionTimeSeconds();
         int count = questionCount != null ? questionCount : d.questionCount();
-        time = Math.max(5, Math.min(120, time));
+        time = Math.max(5, Math.min(300, time));
         count = Math.max(1, Math.min(30, count));
+        Integer maxPerTeam = maxPlayersPerTeam != null
+                ? Math.max(2, Math.min(5, maxPlayersPerTeam))
+                : null;
         return new GameConfig(
                 roomMode != null ? roomMode : d.roomMode(),
                 scoringMode != null ? scoringMode : d.scoringMode(),
                 advanceMode != null ? advanceMode : d.advanceMode(),
                 time,
-                count
+                count,
+                maxPerTeam
         );
     }
 }

@@ -7,6 +7,7 @@ import br.ufpb.dcx.apps4society.quizapi.dto.alternative.AlternativeResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ResponseDTO(
         Long id,
@@ -14,6 +15,7 @@ public record ResponseDTO(
         LocalDate dateTime,
         UserResponse user,
         QuestionMinResponse question,
-        AlternativeResponse alternative
+        AlternativeResponse alternative,
+        List<AlternativeResponse> questionAlternatives
 ) {
 }

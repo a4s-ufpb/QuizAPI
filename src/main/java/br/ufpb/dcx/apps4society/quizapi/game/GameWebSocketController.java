@@ -20,7 +20,7 @@ public class GameWebSocketController {
 
     @MessageMapping("/game/join")
     public void join(Join msg) {
-        gameRoomService.join(msg.code(), msg.playerId(), msg.name());
+        gameRoomService.join(msg.code(), msg.playerId(), msg.name(), msg.avatar());
     }
 
     @MessageMapping("/game/leave")
@@ -36,6 +36,26 @@ public class GameWebSocketController {
     @MessageMapping("/game/team")
     public void team(TeamPick msg) {
         gameRoomService.pickTeam(msg.code(), msg.playerId(), msg.teamId());
+    }
+
+    @MessageMapping("/game/team/create")
+    public void createTeam(TeamCreate msg) {
+        gameRoomService.createTeam(msg.code(), msg.playerId(), msg.teamName());
+    }
+
+    @MessageMapping("/game/avatar")
+    public void setAvatar(SetAvatar msg) {
+        gameRoomService.setAvatar(msg.code(), msg.playerId(), msg.avatar());
+    }
+
+    @MessageMapping("/game/team/avatar")
+    public void setTeamAvatar(SetTeamAvatar msg) {
+        gameRoomService.setTeamAvatar(msg.code(), msg.playerId(), msg.teamId(), msg.avatar());
+    }
+
+    @MessageMapping("/game/team/captain")
+    public void transferCaptain(TransferCaptain msg) {
+        gameRoomService.transferCaptain(msg.code(), msg.playerId(), msg.teamId(), msg.newCaptainId());
     }
 
     @MessageMapping("/game/kick")

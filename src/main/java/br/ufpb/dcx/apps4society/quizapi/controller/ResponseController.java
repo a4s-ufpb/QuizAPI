@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.response.MySummaryDTO;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseStatisticDTO;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.Themes;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.Usernames;
@@ -58,9 +59,25 @@ public class ResponseController {
     @GetMapping(value = "/user", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Page<ResponseDTO>> findResponsesByUser(@RequestParam(value = "page", defaultValue = "0") Integer page,
                                                               @RequestParam(value = "size", defaultValue = "20") Integer size,
+                                                              @RequestParam(value = "theme", defaultValue = "") String theme,
+                                                              @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
+                                                              @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
                                                               @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findResponsesByUser(pageable, token));
+        return ResponseEntity.ok(service.findMyResponses(pageable, token, theme, startDate, endDate));
+    }
+
+    @Operation(tags = "Response", summary = "Find My Response Summary (quizzes finished / correct / wrong)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(schema = @Schema(implementation = MySummaryDTO.class))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/user/summary", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MySummaryDTO> findMySummary(@RequestParam(value = "theme", defaultValue = "") String theme,
+                                                        @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
+                                                        @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
+                                                        @RequestHeader("Authorization") String token){
+        return ResponseEntity.ok(service.findMySummary(token, theme, startDate, endDate));
     }
 
     @Operation(tags = "Response", summary = "Find Responses by Question Creator", responses ={
@@ -93,6 +110,20 @@ public class ResponseController {
                                                                            @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
         return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeName(pageable, token, username, theme, currentDate, finalDate));
+    }
+
+    @Operation(tags = "Response", summary = "Find Responses by Username or/and Date Without Pagination (for charts)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/query/chart")
+    public ResponseEntity<List<ResponseDTO>> findResponsesByUsernameOrDateForChart(@RequestParam(value = "currentDate", defaultValue = "") LocalDate currentDate,
+                                                                                    @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
+                                                                                    @RequestParam(value = "username", defaultValue = "") String username,
+                                                                                    @RequestParam(value = "theme", defaultValue = "") String theme,
+                                                                                    @RequestHeader("Authorization") String token){
+        return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeNameForChart(token, username, theme, currentDate, finalDate));
     }
 
     @Operation(tags = "Response", summary = "Find Responses Statistics", responses ={

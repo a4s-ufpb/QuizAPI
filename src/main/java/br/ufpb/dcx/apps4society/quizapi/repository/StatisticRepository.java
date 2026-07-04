@@ -63,4 +63,14 @@ public interface StatisticRepository extends JpaRepository<StatisticPerConclusio
             @Param("themeName") String themeName,
             @Param("studentName") String studentName
     );
+
+    // Total de quizzes concluídos pelo próprio usuário (como aluno), com filtros opcionais
+    @Query("SELECT COUNT(s) FROM tb_statistic s WHERE s.studentName = :studentName " +
+            "AND (:themeName = '' OR s.themeName = :themeName) " +
+            "AND (:startDate IS NULL OR s.date >= :startDate) " +
+            "AND (:endDate IS NULL OR s.date <= :endDate)")
+    long countByStudentNameAndFilters(@Param("studentName") String studentName,
+                                       @Param("themeName") String themeName,
+                                       @Param("startDate") LocalDate startDate,
+                                       @Param("endDate") LocalDate endDate);
 }

@@ -9,13 +9,21 @@ import br.ufpb.dcx.apps4society.quizapi.game.dto.GameConfig;
 public final class GameMessages {
     private GameMessages() {}
 
-    public record Join(String code, String playerId, String name) {}
+    public record Join(String code, String playerId, String name, String avatar) {}
 
     public record PlayerRef(String code, String playerId) {}
 
     public record Ready(String code, String playerId, boolean ready) {}
 
     public record TeamPick(String code, String playerId, String teamId) {}
+
+    public record TeamCreate(String code, String playerId, String teamName) {}
+
+    public record SetAvatar(String code, String playerId, String avatar) {}
+
+    public record SetTeamAvatar(String code, String playerId, String teamId, String avatar) {}
+
+    public record TransferCaptain(String code, String playerId, String teamId, String newCaptainId) {}
 
     public record Kick(String code, String hostId, String targetId) {}
 

@@ -9,5 +9,9 @@ public record QuestionResultView(
         int total,
         boolean lastQuestion,
         List<RoomStateResponse.PlayerView> scoreboard,
-        List<RoomStateResponse.TeamView> teamScoreboard
-) {}
+        List<RoomStateResponse.TeamView> teamScoreboard,
+        List<PlayerAnswerView> answers
+) {
+    /** Se cada jogador respondeu e se acertou essa questão (usado no export de estatísticas). */
+    public record PlayerAnswerView(String playerId, String playerName, boolean answered, boolean correct) {}
+}

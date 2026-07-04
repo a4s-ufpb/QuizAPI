@@ -78,6 +78,10 @@ public class StatisticService {
         return statistic.map(StatisticPerConclusion::entityToResponse);
     }
 
+    public List<StatisticResponse> findAllStatisticsByCreatorForChart(UUID creatorId, String studentName, String themeName, LocalDate startDate, LocalDate endDate) {
+        return findAllStatisticsByCreator(Pageable.unpaged(), creatorId, studentName, themeName, startDate, endDate).getContent();
+    }
+
     public List<StudentName> findDistinctStudentNameByCreatorId(UUID creatorId) {
         Set<StudentName> seenThemesAndStudents = new HashSet<>();
 

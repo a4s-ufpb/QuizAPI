@@ -6,6 +6,9 @@ public record QuestionMinResponse(
         Long id,
         String title,
         String imageUrl,
+        String imageBase64One,
+        String imageBase64Two,
+        String imagesOrder,
         ThemeResponse theme
 ) {
 }

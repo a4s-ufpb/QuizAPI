@@ -14,6 +14,8 @@ public class GamePlayer {
     private int lastGained;
     private boolean answeredCurrent;
     private Long currentAnswerId;
+    private String avatar;
+    private boolean captain;
 
     public GamePlayer(String id, String name, boolean host) {
         this.id = id;
@@ -50,4 +52,8 @@ public class GamePlayer {
     public void setAnsweredCurrent(boolean answeredCurrent) { this.answeredCurrent = answeredCurrent; }
     public Long getCurrentAnswerId() { return currentAnswerId; }
     public void setCurrentAnswerId(Long currentAnswerId) { this.currentAnswerId = currentAnswerId; }
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
+    public boolean isCaptain() { return captain; }
+    public void setCaptain(boolean captain) { this.captain = captain; }
 }

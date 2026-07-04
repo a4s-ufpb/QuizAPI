@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 @Entity(name = "tb_response")
 public class Response implements Serializable {
     @Id
@@ -30,10 +31,16 @@ public class Response implements Serializable {
     }
 
     public ResponseDTO entityToResponse(){
+        List<br.ufpb.dcx.apps4society.quizapi.dto.alternative.AlternativeResponse> questionAlternatives =
+                question.getAlternatives().stream()
+                        .map(Alternative::entityToResponse)
+                        .toList();
+
         return new ResponseDTO(id, dateTime,
                 user.entityToResponse(),
                 question.entityToMinResponse(),
-                alternative.entityToResponse());
+                alternative.entityToResponse(),
+                questionAlternatives);
     }
 
     public LocalDate getDateTime() {
