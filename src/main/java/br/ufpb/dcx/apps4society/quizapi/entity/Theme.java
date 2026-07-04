@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Objects;
 
 @Entity(name = "tb_theme")
+@Table(indexes = {
+        @Index(name = "idx_theme_creator_uuid", columnList = "creator_uuid"),
+})
 public class Theme implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,7 +20,9 @@ public class Theme implements Serializable {
     private String imageUrl;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private User creator;
-    @OneToMany(mappedBy = "theme", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    // LAZY: listar temas não precisa carregar todas as questões (com base64
+    // de imagem) de cada um — só é acessado explicitamente quando necessário.
+    @OneToMany(mappedBy = "theme", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     private List<Question> questions = new ArrayList<>();
     @OneToMany(mappedBy = "theme", cascade = CascadeType.REMOVE)
     private List<Score> ranking = new ArrayList<>();

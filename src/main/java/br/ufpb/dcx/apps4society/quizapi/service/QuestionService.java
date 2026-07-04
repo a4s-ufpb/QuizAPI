@@ -1,6 +1,8 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionImagesResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionMinResponse;
+import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionQuizResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionUpdate;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
@@ -80,6 +82,19 @@ public class QuestionService {
         return questions.stream().map(Question::entityToResponse).toList();
     }
 
+    // Sem os base64 de imagem (podem passar de 1MB somando as 10 questões) —
+    // o cliente busca a imagem da questão atual sob demanda via
+    // GET /question/{id}/images, igual ao multiplayer.
+    public List<QuestionQuizResponse> find10QuestionsForPlay(Long id){
+        List<Question> questions = questionRepository.find10QuestionsByThemeId(id);
+
+        if (questions.isEmpty()){
+            throw new QuestionNotFoundException("Não existe nenhuma Questão ligada a esse Tema");
+        }
+
+        return questions.stream().map(Question::entityToQuizResponse).toList();
+    }
+
     public QuestionResponse findQuestionById(Long id, String token) throws UserNotHavePermissionException {
         User loggedUser = userService.findUserByToken(token);
 
@@ -91,6 +106,15 @@ public class QuestionService {
         }
 
         return question.entityToResponse();
+    }
+
+    // Sem autenticação (usado pelo multiplayer, jogadores convidados): só as
+    // imagens, nunca alternativas/gabarito, pra não vazar a resposta certa.
+    public QuestionImagesResponse findQuestionImages(Long id){
+        Question question = questionRepository.findById(id)
+                .orElseThrow(() -> new QuestionNotFoundException(Messages.QUESTION_NOT_FOUND));
+
+        return question.entityToImagesResponse();
     }
 
     public Page<QuestionResponse> findQuestionByThemeId(Long id, Pageable pageable){

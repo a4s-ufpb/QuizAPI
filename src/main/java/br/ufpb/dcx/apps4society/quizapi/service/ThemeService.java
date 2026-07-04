@@ -11,6 +11,8 @@ import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
 import br.ufpb.dcx.apps4society.quizapi.util.Messages;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class ThemeService {
         this.userService = userService;
     }
 
+    @CacheEvict(value = "themes", allEntries = true)
     public ThemeResponse insertTheme(ThemeRequest themeRequest, String token) throws ThemeAlreadyExistsException {
         Theme theme = repository.findByNameIgnoreCase(themeRequest.name());
 
@@ -42,6 +45,7 @@ public class ThemeService {
         return saveTheme.entityToResponse();
     }
 
+    @CacheEvict(value = "themes", allEntries = true)
     public void removeTheme(Long id, String token) throws UserNotHavePermissionException {
         User user = userService.findUserByToken(token);
 
@@ -55,6 +59,9 @@ public class ThemeService {
         repository.delete(theme);
     }
 
+    // Temas são lidos com muito mais frequência do que escritos; cacheado por
+    // (página, tamanho, nome) com TTL curto (ver spring.cache.caffeine.spec).
+    @Cacheable(value = "themes", key = "'all:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #name")
     public Page<ThemeResponse> findAllThemes(Pageable pageable, String name){
         Page<Theme> themes;
 
@@ -77,6 +84,7 @@ public class ThemeService {
                 .entityToResponse();
     }
 
+    @Cacheable(value = "themes", key = "'creator:' + #token + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #name")
     public Page<ThemeResponse> findThemesByCreator(String token, String name, Pageable pageable){
         User creator = userService.findUserByToken(token);
         Page<Theme> themes = null;
@@ -94,6 +102,7 @@ public class ThemeService {
         return themes.map(Theme::entityToResponse);
     }
 
+    @CacheEvict(value = "themes", allEntries = true)
     public ThemeResponse updateTheme(Long id, ThemeUpdate themeUpdate, String token) throws UserNotHavePermissionException, ThemeAlreadyExistsException {
         User user = userService.findUserByToken(token);
 

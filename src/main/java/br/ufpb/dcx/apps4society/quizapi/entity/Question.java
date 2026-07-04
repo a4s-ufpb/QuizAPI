@@ -1,6 +1,8 @@
 package br.ufpb.dcx.apps4society.quizapi.entity;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionImagesResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionMinResponse;
+import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionQuizResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionResponse;
 import jakarta.persistence.*;
@@ -10,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity(name = "tb_question")
+@Table(indexes = {
+        @Index(name = "idx_question_theme_id", columnList = "theme_id"),
+        @Index(name = "idx_question_creator_uuid", columnList = "creator_uuid"),
+})
 public class Question implements Serializable {
     public static final int MAXIMUM_NUMBER_OF_ALTERNATIVES = 6;
 
@@ -61,6 +67,15 @@ public class Question implements Serializable {
 
     public QuestionMinResponse entityToMinResponse(){
         return new QuestionMinResponse(id, title, imageUrl, imageBase64One, imageBase64Two, imagesOrder, theme.entityToResponse());
+    }
+
+    public QuestionImagesResponse entityToImagesResponse(){
+        return new QuestionImagesResponse(id, imageUrl, imageBase64One, imageBase64Two, imagesOrder);
+    }
+
+    public QuestionQuizResponse entityToQuizResponse(){
+        return new QuestionQuizResponse(id, title, imageUrl, imagesOrder,
+                alternatives.stream().map(Alternative::entityToResponse).toList());
     }
 
     public void addAlternative(Alternative alternative) {

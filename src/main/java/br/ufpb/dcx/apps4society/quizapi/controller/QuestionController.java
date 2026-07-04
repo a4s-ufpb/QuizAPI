@@ -1,5 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionImagesResponse;
+import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionQuizResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionUpdate;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionResponse;
@@ -85,6 +87,16 @@ public class QuestionController {
         return ResponseEntity.ok(service.updateQuestion(id, questionUpdate, token));
     }
 
+    @Operation(tags = "Question", summary = "Find Question Images (public, sem gabarito — usado no multiplayer)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(schema = @Schema(implementation = QuestionImagesResponse.class))),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+    } )
+    @GetMapping(value = "/{id}/images", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<QuestionImagesResponse> findQuestionImages(@PathVariable Long id){
+        return ResponseEntity.ok(service.findQuestionImages(id));
+    }
+
     @Operation(tags = "Question", summary = "Find 10 Questions by Theme", responses ={
             @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class)))),
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
@@ -93,6 +105,16 @@ public class QuestionController {
     @GetMapping(value = "/quiz/{idTheme}")
     public ResponseEntity<List<QuestionResponse>> find10QuestionsByThemeId(@PathVariable Long idTheme){
         return ResponseEntity.ok(service.find10QuestionsByThemeId(idTheme));
+    }
+
+    @Operation(tags = "Question", summary = "Find 10 Questions by Theme for Play (sem base64 de imagem)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionQuizResponse.class)))),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+    } )
+    @GetMapping(value = "/quiz/{idTheme}/play")
+    public ResponseEntity<List<QuestionQuizResponse>> find10QuestionsForPlay(@PathVariable Long idTheme){
+        return ResponseEntity.ok(service.find10QuestionsForPlay(idTheme));
     }
 
     @Operation(tags = "Question", summary = "Find Questions by Creator and Theme", responses ={

@@ -4,6 +4,10 @@ spring:
   output:
     ansi:
       enabled: always
+  cache:
+    cache-names: themes
+    caffeine:
+      spec: expireAfterWrite=5m,maximumSize=200
 app:
   version: ${APP_VERSION:1.0}
   secret: ${APP_SECRET:secret}

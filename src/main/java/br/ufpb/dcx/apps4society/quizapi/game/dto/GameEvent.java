@@ -20,4 +20,5 @@ public record GameEvent(String type, Object data) {
     public static GameEvent chat(Object data) { return new GameEvent(CHAT, data); }
     public static GameEvent error(String message) { return new GameEvent(ERROR, message); }
     public static GameEvent countdown(int seconds) { return new GameEvent(COUNTDOWN, seconds); }
+    public static GameEvent roomClosed(String code) { return new GameEvent(ROOM_CLOSED, code); }
 }

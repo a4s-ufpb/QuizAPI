@@ -9,6 +9,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 @Entity(name = "tb_response")
+@Table(indexes = {
+        @Index(name = "idx_response_user_uuid", columnList = "user_uuid"),
+        @Index(name = "idx_response_question_id", columnList = "question_id"),
+        @Index(name = "idx_response_game_mode_date_time", columnList = "game_mode, date_time"),
+})
 public class Response implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

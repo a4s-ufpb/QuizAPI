@@ -33,10 +33,21 @@ public class GameRoom {
     /** Timer agendado (fim de questão / avanço automático) para permitir cancelamento. */
     private ScheduledFuture<?> timerTask;
 
+    /** Marca de tempo da última ação de qualquer jogador, usada pra varredura de salas abandonadas. */
+    private long lastActivityMillis = System.currentTimeMillis();
+
     public GameRoom(String code, String hostId, GameConfig config) {
         this.code = code;
         this.hostId = hostId;
         this.config = config;
+    }
+
+    public void touch() {
+        this.lastActivityMillis = System.currentTimeMillis();
+    }
+
+    public long getLastActivityMillis() {
+        return lastActivityMillis;
     }
 
     public Question currentQuestion() {

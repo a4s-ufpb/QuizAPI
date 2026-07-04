@@ -29,10 +29,16 @@ public class GameRoomService {
     private static final int COUNTDOWN_SECONDS = 3;
     private static final int SCORE_MAX = 1000;
     private static final int SCORE_MIN_CORRECT = 500;
+    private static final long ROOM_IDLE_TIMEOUT_MINUTES = 30;
+    private static final long ROOM_SWEEP_INTERVAL_MINUTES = 5;
 
     private final Map<String, GameRoom> rooms = new HashMap<>();
     private final SecureRandom random = new SecureRandom();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    // Dimensionado pelos cores disponíveis: com só 2 threads fixas, salas
+    // simultâneas além desse número enfileiram os timers e atrasam o
+    // início/fim de questão perceptivelmente para o jogador.
+    private final ScheduledExecutorService scheduler =
+            Executors.newScheduledThreadPool(Math.max(4, Runtime.getRuntime().availableProcessors()));
 
     private final QuestionRepository questionRepository;
     private final ThemeRepository themeRepository;
@@ -44,6 +50,8 @@ public class GameRoomService {
         this.questionRepository = questionRepository;
         this.themeRepository = themeRepository;
         this.messagingTemplate = messagingTemplate;
+        this.scheduler.scheduleAtFixedRate(this::sweepIdleRooms,
+                ROOM_SWEEP_INTERVAL_MINUTES, ROOM_SWEEP_INTERVAL_MINUTES, TimeUnit.MINUTES);
     }
 
     // ---------- criação / consulta ----------
@@ -283,6 +291,7 @@ public class GameRoomService {
         synchronized (this) {
             GameRoom room = rooms.get(code);
             if (room == null || room.getStatus() != RoomStatus.LOBBY) return;
+            room.touch();
             startQuestion(room, 0);
         }
     }
@@ -324,9 +333,12 @@ public class GameRoomService {
                 .map(a -> new QuestionView.AlternativeView(a.getId(), a.entityToResponse().text()))
                 .toList();
         int time = room.getConfig().questionTimeSeconds();
+        // Sem os base64 de imagem no broadcast (podem passar de 100KB cada) —
+        // o cliente busca via GET /question/{id}/images (público, sem
+        // gabarito) só quando a questão realmente tem upload (imagesOrder).
         QuestionView view = new QuestionView(
                 question.getId(), question.getTitle(), question.getImageUrl(),
-                question.getImageBase64One(), question.getImageBase64Two(), question.getImagesOrder(),
+                question.getImagesOrder(),
                 index, room.getQuestions().size(), time, room.getQuestionStartMillis(), alternatives);
 
         messagingTemplate.convertAndSend(topic(room.getCode()), GameEvent.question(view));
@@ -343,6 +355,7 @@ public class GameRoomService {
                     || room.getCurrentIndex() != expectedIndex) {
                 return;
             }
+            room.touch();
             endQuestion(room);
         }
     }
@@ -375,6 +388,7 @@ public class GameRoomService {
         synchronized (this) {
             GameRoom room = rooms.get(code);
             if (room == null || room.getStatus() != RoomStatus.BETWEEN) return;
+            room.touch();
             advance(room);
         }
     }
@@ -482,7 +496,28 @@ public class GameRoomService {
     private GameRoom requireRoom(String code) {
         GameRoom room = rooms.get(code);
         if (room == null) throw new NoSuchElementException("Sala não encontrada: " + code);
+        room.touch();
         return room;
+    }
+
+    /**
+     * Remove periodicamente salas sem nenhuma ação de jogador há mais de
+     * ROOM_IDLE_TIMEOUT_MINUTES — evita que salas abandonadas (host caiu sem
+     * fechar) fiquem ocupando memória indefinidamente.
+     */
+    private void sweepIdleRooms() {
+        long cutoff = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(ROOM_IDLE_TIMEOUT_MINUTES);
+        synchronized (this) {
+            rooms.entrySet().removeIf(entry -> {
+                GameRoom room = entry.getValue();
+                boolean idle = room.getLastActivityMillis() < cutoff;
+                if (idle) {
+                    room.cancelTimer();
+                    messagingTemplate.convertAndSend(topic(entry.getKey()), GameEvent.roomClosed(entry.getKey()));
+                }
+                return idle;
+            });
+        }
     }
 
     private void sendError(String code, String message) {
