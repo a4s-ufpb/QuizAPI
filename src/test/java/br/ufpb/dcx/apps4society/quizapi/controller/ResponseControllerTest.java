@@ -21,6 +21,7 @@ import java.util.UUID;
 
 import static br.ufpb.dcx.apps4society.quizapi.util.ResponseRequestUtil.BASE_PATH_RESPONSE;
 import static io.restassured.RestAssured.*;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class ResponseControllerTest extends QuizApplicationTests {
@@ -347,7 +348,7 @@ class ResponseControllerTest extends QuizApplicationTests {
     }
 
     @Test
-    void findResponsesByListIsEmpty_shouldReturn404Test() {
+    void findResponsesByListIsEmpty_shouldReturn200WithEmptyContentTest() {
         UserRequest userRequest = mockUser.mockRequest(1);
         UserResponse userResponse = UserRequestUtil.post(userRequest);
         String token = UserRequestUtil.login(mockUser.mockUserLogin());
@@ -361,13 +362,16 @@ class ResponseControllerTest extends QuizApplicationTests {
         AlternativeRequest alternativeRequest = mockAlternative.mockRequest(1);
         AlternativeResponse alternativeResponse = AlternativeRequestUtil.post(alternativeRequest, token, questionResponse.id());
 
+        // Endpoint paginado: lista vazia retorna 200 com "content" vazio, não 404
+        // (convenção de listagem paginada, igual às demais páginas do app).
         given()
                 .header("Authorization", "Bearer " + token)
                 .when()
                 .get(baseURI + ":" + port + basePath + BASE_PATH_RESPONSE + "/user")
                 .then()
                 .assertThat()
-                .statusCode(404);
+                .statusCode(200)
+                .body("content.size()", equalTo(0));
 
         QuestionRequestUtil.delete(questionResponse.id(), token);
         ThemeRequestUtil.delete(themeResponse.id(), token);

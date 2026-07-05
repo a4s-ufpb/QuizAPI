@@ -22,6 +22,8 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
     private int likes = 0;
+    private int xp = 0;
+    private int level = 1;
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
     private List<Theme> themes = new ArrayList<>();
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
@@ -59,7 +61,7 @@ public class User implements UserDetails {
     }
 
     public UserResponse entityToResponse(){
-        return new UserResponse(uuid,name,email,role,likes);
+        return new UserResponse(uuid,name,email,role,likes,xp,level);
     }
 
     public void addLike(){
@@ -68,6 +70,22 @@ public class User implements UserDetails {
 
     public int getLikes() {
         return likes;
+    }
+
+    // Cada 100 xp sobe um nível (nível mínimo 1).
+    private static final int XP_PER_LEVEL = 100;
+
+    public void addXp(int amount){
+        this.xp += amount;
+        this.level = 1 + (this.xp / XP_PER_LEVEL);
+    }
+
+    public int getXp() {
+        return xp;
+    }
+
+    public int getLevel() {
+        return level;
     }
 
     public void addTheme(Theme theme){

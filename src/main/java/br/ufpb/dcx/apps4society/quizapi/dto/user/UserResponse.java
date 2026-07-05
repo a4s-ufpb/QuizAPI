@@ -9,6 +9,8 @@ public record UserResponse(
         String name,
         String email,
         Role role,
-        int likes
+        int likes,
+        int xp,
+        int level
 ) {
 }

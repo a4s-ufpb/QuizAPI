@@ -11,6 +11,7 @@ import br.ufpb.dcx.apps4society.quizapi.util.Messages;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -183,6 +184,17 @@ public class UserService {
         userRepository.save(target);
 
         return target.entityToResponse();
+    }
+
+    // Busca simples por nome pra adicionar amigos (qualquer usuário logado pode buscar).
+    public List<UserResponse> searchUsersByName(String token, String name) {
+        User loggedUser = findUserByToken(token);
+
+        return userRepository.findByNameStartsWithIgnoreCase(name, PageRequest.of(0, 10))
+                .stream()
+                .filter(u -> !u.getUuid().equals(loggedUser.getUuid()))
+                .map(User::entityToResponse)
+                .toList();
     }
 
     public AdminResponse validateIfUserIsAdmin(String token, UUID id) throws UserNotHavePermissionException {

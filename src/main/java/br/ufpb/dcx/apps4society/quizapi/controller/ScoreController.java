@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.score.GlobalRankingResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.score.ScoreRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.score.ScoreResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeResponse;
@@ -11,6 +12,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,5 +55,15 @@ public class ScoreController {
     @GetMapping(value = "/{themeId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ScoreResponse>> findRankingByTheme(@PathVariable Long themeId){
         return ResponseEntity.ok(scoreService.findRankingByTheme(themeId));
+    }
+
+    @Operation(tags = "Score", summary = "Find Global Ranking (cross-theme)")
+    @GetMapping(value = "/global", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Page<GlobalRankingResponse>> findGlobalRanking(
+            @RequestParam(defaultValue = "ALL") String period,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(scoreService.findGlobalRanking(period, pageable));
     }
 }

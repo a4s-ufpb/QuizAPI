@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.score.GlobalRankingResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.score.ScoreRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.score.ScoreResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.Score;
@@ -11,8 +12,11 @@ import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ScoreNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,5 +53,12 @@ public class ScoreService {
         }
 
         return ranking.stream().map(Score::entityToResponse).toList();
+    }
+
+    public Page<GlobalRankingResponse> findGlobalRanking(String period, Pageable pageable) {
+        LocalDateTime since = "WEEK".equalsIgnoreCase(period) ? LocalDateTime.now().minusWeeks(1) : null;
+
+        return scoreRepository.findGlobalRanking(since, pageable)
+                .map(row -> new GlobalRankingResponse(row.getUser().entityToResponse(), row.getTotal()));
     }
 }

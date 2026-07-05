@@ -143,6 +143,12 @@ public class UserController {
         return ResponseEntity.ok(userService.likeUser(id, token));
     }
 
+    @GetMapping(value = "/search")
+    public ResponseEntity<java.util.List<UserResponse>> searchUsersByName(@RequestParam("name") String name,
+                                                                           @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(userService.searchUsersByName(token, name));
+    }
+
     @Operation(tags = "User", summary = "Validade User Admin", responses ={
             @ApiResponse(description = "Success", responseCode = "200", content = @Content()),
             @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),

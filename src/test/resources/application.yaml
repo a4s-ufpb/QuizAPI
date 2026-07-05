@@ -3,21 +3,30 @@ app:
   secret: secret
 
 spring:
-  datasource:
-    driver-class-name: org.h2.Driver
-    password: ''
-    url: jdbc:h2:mem:testdb
-    username: sa
-  h2:
-    console:
-      enabled: true
-      path: /h2
+  cache:
+    cache-names: themes
+    caffeine:
+      spec: expireAfterWrite=5m,maximumSize=200
   jpa:
     hibernate:
-      ddl-auto: update
+      # Schema gerenciado pelo Flyway (mesmas migrations do prod/dev, rodando
+      # contra o Postgres real via Testcontainers) — Hibernate só valida.
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
   output:
     ansi:
       enabled: always
 
 cors:
   origins: http://127.0.0.1:5500,http://localhots:3000
+
+# MinIO não sobe nos testes — o client só precisa resolver os placeholders;
+# MinioBucketInitializer captura e loga se não conseguir conectar.
+minio:
+  endpoint: http://localhost:9000
+  public-url: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: quiz-images

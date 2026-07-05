@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
 
 @Entity(name = "tb_score")
 public class Score implements Serializable {
@@ -21,6 +22,8 @@ public class Score implements Serializable {
     private User user;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Theme theme;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
     @Transient
     private final Double HIT_VALUE = 97.45;
     @Transient
@@ -69,6 +72,10 @@ public class Score implements Serializable {
 
     public Integer getTotalTime() {
         return totalTime;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
 }
