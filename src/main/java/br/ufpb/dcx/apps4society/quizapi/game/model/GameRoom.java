@@ -36,6 +36,11 @@ public class GameRoom {
     /** Marca de tempo da última ação de qualquer jogador, usada pra varredura de salas abandonadas. */
     private long lastActivityMillis = System.currentTimeMillis();
 
+    /** Poder escolhido pelo líder (modo Diversão), ainda não aplicado — vale pra próxima questão. */
+    private QuestionPower pendingPowerUp;
+    /** Poder que está valendo pra questão atual (aplicado no start dela). */
+    private QuestionPower currentPowerUp;
+
     public GameRoom(String code, String hostId, GameConfig config) {
         this.code = code;
         this.hostId = hostId;
@@ -103,4 +108,8 @@ public class GameRoom {
     public long getQuestionStartMillis() { return questionStartMillis; }
     public void setQuestionStartMillis(long questionStartMillis) { this.questionStartMillis = questionStartMillis; }
     public void setTimerTask(ScheduledFuture<?> timerTask) { this.timerTask = timerTask; }
+    public QuestionPower getPendingPowerUp() { return pendingPowerUp; }
+    public void setPendingPowerUp(QuestionPower pendingPowerUp) { this.pendingPowerUp = pendingPowerUp; }
+    public QuestionPower getCurrentPowerUp() { return currentPowerUp; }
+    public void setCurrentPowerUp(QuestionPower currentPowerUp) { this.currentPowerUp = currentPowerUp; }
 }

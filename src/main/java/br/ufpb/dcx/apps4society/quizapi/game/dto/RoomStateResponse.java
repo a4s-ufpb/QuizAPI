@@ -14,7 +14,8 @@ public record RoomStateResponse(
         List<PlayerView> players,
         List<TeamView> teams,
         int currentQuestionIndex,
-        int totalQuestions
+        int totalQuestions,
+        String pendingPowerUp
 ) {
     public record PlayerView(
             String id,
@@ -24,7 +25,8 @@ public record RoomStateResponse(
             String teamId,
             int score,
             String avatar,
-            boolean captain
+            boolean captain,
+            String userUuid
     ) {}
 
     public record TeamView(String id, String name, int score, String avatar, String captainId) {}

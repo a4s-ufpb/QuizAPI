@@ -29,6 +29,7 @@ public class GameRoomService {
     private static final int COUNTDOWN_SECONDS = 3;
     private static final int SCORE_MAX = 1000;
     private static final int SCORE_MIN_CORRECT = 500;
+    private static final int STEAL_AMOUNT = 100;
     private static final long ROOM_IDLE_TIMEOUT_MINUTES = 30;
     private static final long ROOM_SWEEP_INTERVAL_MINUTES = 5;
 
@@ -80,7 +81,7 @@ public class GameRoomService {
 
     // ---------- lobby ----------
 
-    public synchronized void join(String code, String playerId, String name, String avatar) {
+    public synchronized void join(String code, String playerId, String name, String avatar, String userUuid) {
         GameRoom room = requireRoom(code);
         if (room.getStatus() != RoomStatus.LOBBY) {
             sendError(code, "A partida já começou.");
@@ -89,6 +90,7 @@ public class GameRoomService {
         GamePlayer player = room.getPlayers().computeIfAbsent(playerId,
                 id -> new GamePlayer(id, safeName(name, "Jogador"), false));
         if (avatar != null) player.setAvatar(avatar);
+        if (userUuid != null) player.setUserUuid(userUuid);
         broadcastState(room);
     }
 
@@ -305,6 +307,7 @@ public class GameRoomService {
 
         player.setAnsweredCurrent(true);
         player.setCurrentAnswerId(alternativeId);
+        player.setAnsweredAtMillis(System.currentTimeMillis());
         player.addScore(computeScore(room, alternativeId));
 
         if (room.allActivePlayersAnswered()) {
@@ -320,6 +323,30 @@ public class GameRoomService {
         advance(room);
     }
 
+    /**
+     * Líder escolhe (ou limpa, com {@code power == null}) o poder que vai
+     * valer pra próxima questão — só no modo Diversão, só entre questões.
+     */
+    public synchronized void setPendingPower(String code, String hostId, String power) {
+        GameRoom room = requireRoom(code);
+        if (!hostId.equals(room.getHostId())) return;
+        if (room.getConfig().gameStyle() != GameStyle.FUN) return;
+        if (room.getStatus() != RoomStatus.BETWEEN) return;
+
+        QuestionPower parsed = parsePower(power);
+        room.setPendingPowerUp(parsed);
+        broadcastState(room);
+    }
+
+    private QuestionPower parsePower(String power) {
+        if (power == null || power.isBlank()) return null;
+        try {
+            return QuestionPower.valueOf(power);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     // ---------- internos ----------
 
     private void startQuestion(GameRoom room, int index) {
@@ -328,24 +355,44 @@ public class GameRoomService {
         room.setQuestionStartMillis(System.currentTimeMillis());
         room.getPlayers().values().forEach(GamePlayer::resetForNewQuestion);
 
+        // O poder armado pelo líder passa a valer pra essa questão e é
+        // consumido — pra continuar valendo ele precisa escolher de novo.
+        QuestionPower power = room.getPendingPowerUp();
+        room.setPendingPowerUp(null);
+        room.setCurrentPowerUp(power);
+
         Question question = room.currentQuestion();
         List<QuestionView.AlternativeView> alternatives = question.getAlternatives().stream()
                 .map(a -> new QuestionView.AlternativeView(a.getId(), a.entityToResponse().text()))
                 .toList();
+        if (power == QuestionPower.HIDE_WRONG_ALTERNATIVE) {
+            alternatives = hideOneWrongAlternative(question, alternatives);
+        }
+
         int time = room.getConfig().questionTimeSeconds();
-        // Sem os base64 de imagem no broadcast (podem passar de 100KB cada) —
-        // o cliente busca via GET /question/{id}/images (público, sem
-        // gabarito) só quando a questão realmente tem upload (imagesOrder).
         QuestionView view = new QuestionView(
                 question.getId(), question.getTitle(), question.getImageUrl(),
+                question.getImageOneUrl(), question.getImageTwoUrl(),
                 question.getImagesOrder(),
-                index, room.getQuestions().size(), time, room.getQuestionStartMillis(), alternatives);
+                index, room.getQuestions().size(), time, room.getQuestionStartMillis(), alternatives,
+                power != null ? power.name() : null);
 
         messagingTemplate.convertAndSend(topic(room.getCode()), GameEvent.question(view));
         broadcastState(room);
 
         room.setTimerTask(scheduler.schedule(() -> endQuestionSafely(room.getCode(), index),
                 time, TimeUnit.SECONDS));
+    }
+
+    /** Remove (determinístico, sempre a mesma) uma alternativa incorreta da lista enviada aos jogadores. */
+    private List<QuestionView.AlternativeView> hideOneWrongAlternative(Question question, List<QuestionView.AlternativeView> alternatives) {
+        Long wrongId = question.getAlternatives().stream()
+                .filter(a -> !Boolean.TRUE.equals(a.getCorrect()))
+                .map(Alternative::getId)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+        if (wrongId == null) return alternatives;
+        return alternatives.stream().filter(a -> !a.id().equals(wrongId)).toList();
     }
 
     private void endQuestionSafely(String code, int expectedIndex) {
@@ -369,6 +416,10 @@ public class GameRoomService {
                 .filter(a -> Boolean.TRUE.equals(a.getCorrect()))
                 .map(Alternative::getId)
                 .findFirst().orElse(null);
+
+        if (room.getCurrentPowerUp() == QuestionPower.STEAL_POINTS) {
+            applyStealPoints(room, correctId);
+        }
 
         boolean last = room.getCurrentIndex() >= room.getQuestions().size() - 1;
         QuestionResultView result = new QuestionResultView(
@@ -409,12 +460,43 @@ public class GameRoomService {
         boolean correct = question.getAlternatives().stream()
                 .anyMatch(a -> a.getId().equals(alternativeId) && Boolean.TRUE.equals(a.getCorrect()));
         if (!correct) return 0;
-        if (room.getConfig().scoringMode() == ScoringMode.FIXED) return SCORE_MAX;
 
-        long elapsed = System.currentTimeMillis() - room.getQuestionStartMillis();
-        double total = room.getConfig().questionTimeSeconds() * 1000.0;
-        double fraction = Math.max(0, Math.min(1, elapsed / total));
-        return (int) Math.round(SCORE_MAX - (SCORE_MAX - SCORE_MIN_CORRECT) * fraction);
+        int base;
+        if (room.getConfig().scoringMode() == ScoringMode.FIXED) {
+            base = SCORE_MAX;
+        } else {
+            long elapsed = System.currentTimeMillis() - room.getQuestionStartMillis();
+            double total = room.getConfig().questionTimeSeconds() * 1000.0;
+            double fraction = Math.max(0, Math.min(1, elapsed / total));
+            base = (int) Math.round(SCORE_MAX - (SCORE_MAX - SCORE_MIN_CORRECT) * fraction);
+        }
+
+        QuestionPower power = room.getCurrentPowerUp();
+        if (power == null) return base;
+        return (int) Math.round(base * power.scoreMultiplier());
+    }
+
+    /** Poder "roubar pontos": quem responder certo primeiro rouba STEAL_AMOUNT de cada outro jogador ativo. */
+    private void applyStealPoints(GameRoom room, Long correctId) {
+        if (correctId == null) return;
+        boolean soloHost = room.getPlayers().size() == 1;
+        GamePlayer thief = room.getPlayers().values().stream()
+                .filter(p -> !p.isHost() || soloHost)
+                .filter(GamePlayer::isAnsweredCurrent)
+                .filter(p -> correctId.equals(p.getCurrentAnswerId()))
+                .min(Comparator.comparingLong(GamePlayer::getAnsweredAtMillis))
+                .orElse(null);
+        if (thief == null) return;
+
+        int stolenTotal = 0;
+        for (GamePlayer p : room.getPlayers().values()) {
+            if (p == thief) continue;
+            if (p.isHost() && !soloHost) continue;
+            int steal = Math.min(STEAL_AMOUNT, Math.max(0, p.getScore()));
+            p.addScore(-steal);
+            stolenTotal += steal;
+        }
+        thief.addScore(stolenTotal);
     }
 
     // ---------- helpers de estado / broadcast ----------
@@ -457,12 +539,13 @@ public class GameRoomService {
     private RoomStateResponse toState(GameRoom room) {
         List<RoomStateResponse.PlayerView> players = room.getPlayers().values().stream()
                 .map(p -> new RoomStateResponse.PlayerView(
-                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain()))
+                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid()))
                 .toList();
         return new RoomStateResponse(
                 room.getCode(), room.getHostId(), room.getThemeId(), room.getThemeName(), room.getThemeImageUrl(),
                 room.getConfig(), room.getStatus().name(), players, teamScoreboard(room),
-                room.getCurrentIndex(), room.getQuestions().size());
+                room.getCurrentIndex(), room.getQuestions().size(),
+                room.getPendingPowerUp() != null ? room.getPendingPowerUp().name() : null);
     }
 
     private List<RoomStateResponse.PlayerView> scoreboard(GameRoom room) {
@@ -470,7 +553,7 @@ public class GameRoomService {
                 .filter(p -> !p.isHost() || room.getPlayers().size() == 1)
                 .sorted(Comparator.comparingInt(GamePlayer::getScore).reversed())
                 .map(p -> new RoomStateResponse.PlayerView(
-                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain()))
+                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid()))
                 .toList();
     }
 

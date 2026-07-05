@@ -8,9 +8,25 @@ spring:
     cache-names: themes
     caffeine:
       spec: expireAfterWrite=5m,maximumSize=200
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # Bancos que já existiam antes do Flyway (ex: produção, com tabelas e
+    # dados) são "batizados" na V1 sem reexecutá-la — só migrations
+    # posteriores (V2+) rodam de verdade neles. Em banco vazio (dev/CI novo)
+    # o baseline não tem efeito: todas as migrations rodam normalmente.
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: baseline - schema já existente antes do Flyway
 app:
   version: ${APP_VERSION:1.0}
   secret: ${APP_SECRET:secret}
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket: ${MINIO_BUCKET:quiz-images}
 springdoc:
   pathsToMatch:
     - /v1/**

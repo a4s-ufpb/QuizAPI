@@ -20,7 +20,7 @@ public class GameWebSocketController {
 
     @MessageMapping("/game/join")
     public void join(Join msg) {
-        gameRoomService.join(msg.code(), msg.playerId(), msg.name(), msg.avatar());
+        gameRoomService.join(msg.code(), msg.playerId(), msg.name(), msg.avatar(), msg.userUuid());
     }
 
     @MessageMapping("/game/leave")
@@ -71,6 +71,11 @@ public class GameWebSocketController {
     @MessageMapping("/game/config")
     public void config(ConfigUpdate msg) {
         gameRoomService.updateConfig(msg.code(), msg.hostId(), msg.config());
+    }
+
+    @MessageMapping("/game/power")
+    public void setPower(SetPower msg) {
+        gameRoomService.setPendingPower(msg.code(), msg.hostId(), msg.power());
     }
 
     @MessageMapping("/game/chat")

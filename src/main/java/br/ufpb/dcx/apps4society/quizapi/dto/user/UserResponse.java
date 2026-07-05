@@ -8,6 +8,7 @@ public record UserResponse(
         UUID uuid,
         String name,
         String email,
-        Role role
+        Role role,
+        int likes
 ) {
 }

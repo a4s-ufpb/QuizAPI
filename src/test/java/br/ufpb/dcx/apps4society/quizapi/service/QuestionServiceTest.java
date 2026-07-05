@@ -44,6 +44,8 @@ class QuestionServiceTest {
     ThemeRepository themeRepository;
     @Mock
     UserService userService;
+    @Mock
+    ImageStorageService imageStorageService;
     @InjectMocks
     QuestionService questionService;
 

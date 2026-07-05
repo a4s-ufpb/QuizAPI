@@ -11,7 +11,7 @@ public class MockResponse {
     public Response mockResponseDTO(Integer num) {
         return new Response(
                 new User("User", "user@gmail.com", "12345678"),
-                new Question(new QuestionRequest("title", "http://image.com", null, null, null), new Theme(), new User()),
+                new Question(new QuestionRequest("title", "http://image.com", null, null, null), new Theme(), new User(), null, null),
                 new Alternative(new AlternativeRequest("response", true), new Question()));
     }
 

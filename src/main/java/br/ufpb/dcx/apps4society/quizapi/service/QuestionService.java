@@ -1,6 +1,5 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
-import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionImagesResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionMinResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionQuizResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionUpdate;
@@ -30,13 +29,15 @@ public class QuestionService {
     private QuestionRepository questionRepository;
     private ThemeRepository themeRepository;
     private UserService userService;
+    private ImageStorageService imageStorageService;
 
     @Autowired
     public QuestionService(QuestionRepository questionRepository, ThemeRepository themeRepository,
-                           UserService userService) {
+                           UserService userService, ImageStorageService imageStorageService) {
         this.questionRepository = questionRepository;
         this.themeRepository = themeRepository;
         this.userService = userService;
+        this.imageStorageService = imageStorageService;
     }
 
     public QuestionResponse insertQuestion(QuestionRequest questionRequest, Long idTheme, String token) throws UserNotHavePermissionException, ImageSizeLimitExceededException {
@@ -49,9 +50,12 @@ public class QuestionService {
             throw new UserNotHavePermissionException("Você não tem permissão para cadastrar questões nesse Tema");
         }
 
-        validateImages(questionRequest.imageBase64One(), questionRequest.imageBase64Two());
+        validateImages(questionRequest.imageOneUrl(), questionRequest.imageTwoUrl());
 
-        Question question = new Question(questionRequest, theme, creator);
+        String imageOneUrl = imageStorageService.upload(questionRequest.imageOneUrl());
+        String imageTwoUrl = imageStorageService.upload(questionRequest.imageTwoUrl());
+
+        Question question = new Question(questionRequest, theme, creator, imageOneUrl, imageTwoUrl);
         theme.addQuestion(question);
         creator.addQuestion(question);
 
@@ -82,9 +86,7 @@ public class QuestionService {
         return questions.stream().map(Question::entityToResponse).toList();
     }
 
-    // Sem os base64 de imagem (podem passar de 1MB somando as 10 questões) —
-    // o cliente busca a imagem da questão atual sob demanda via
-    // GET /question/{id}/images, igual ao multiplayer.
+    // Imagens já vêm como URLs do MinIO (leves) — sem base64, sem fetch sob demanda.
     public List<QuestionQuizResponse> find10QuestionsForPlay(Long id){
         List<Question> questions = questionRepository.find10QuestionsByThemeId(id);
 
@@ -106,15 +108,6 @@ public class QuestionService {
         }
 
         return question.entityToResponse();
-    }
-
-    // Sem autenticação (usado pelo multiplayer, jogadores convidados): só as
-    // imagens, nunca alternativas/gabarito, pra não vazar a resposta certa.
-    public QuestionImagesResponse findQuestionImages(Long id){
-        Question question = questionRepository.findById(id)
-                .orElseThrow(() -> new QuestionNotFoundException(Messages.QUESTION_NOT_FOUND));
-
-        return question.entityToImagesResponse();
     }
 
     public Page<QuestionResponse> findQuestionByThemeId(Long id, Pageable pageable){
@@ -169,25 +162,30 @@ public class QuestionService {
             throw new UserNotHavePermissionException("Usuário não tem permissão para atualizar essa questão");
         }
 
-        validateImages(questionUpdate.imageBase64One(), questionUpdate.imageBase64Two());
+        validateImages(questionUpdate.imageOneUrl(), questionUpdate.imageTwoUrl());
 
-        updateData(question, questionUpdate);
+        String imageOneUrl = imageStorageService.upload(questionUpdate.imageOneUrl());
+        String imageTwoUrl = imageStorageService.upload(questionUpdate.imageTwoUrl());
+
+        updateData(question, questionUpdate, imageOneUrl, imageTwoUrl);
         questionRepository.save(question);
 
         return question.entityToResponse();
     }
 
-    private void updateData(Question question, QuestionUpdate questionUpdate){
+    private void updateData(Question question, QuestionUpdate questionUpdate, String imageOneUrl, String imageTwoUrl){
         question.setTitle(questionUpdate.title());
         question.setImageUrl(questionUpdate.imageUrl());
-        question.setImageBase64One(questionUpdate.imageBase64One());
-        question.setImageBase64Two(questionUpdate.imageBase64Two());
+        question.setImageOneUrl(imageOneUrl);
+        question.setImageTwoUrl(imageTwoUrl);
         question.setImagesOrder(questionUpdate.imagesOrder());
     }
 
+    // URLs já armazenadas (edição sem trocar imagem) não contam pro limite de
+    // tamanho — só payloads base64 novos passam por aqui de fato.
     private void validateImages(String imageBase64One, String imageBase64Two) throws ImageSizeLimitExceededException {
-        int sizeOne = ImageValidator.decodedSizeInBytes(imageBase64One);
-        int sizeTwo = ImageValidator.decodedSizeInBytes(imageBase64Two);
+        int sizeOne = isStoredUrl(imageBase64One) ? 0 : ImageValidator.decodedSizeInBytes(imageBase64One);
+        int sizeTwo = isStoredUrl(imageBase64Two) ? 0 : ImageValidator.decodedSizeInBytes(imageBase64Two);
 
         if (sizeOne > ImageValidator.MAX_IMAGE_SIZE_BYTES || sizeTwo > ImageValidator.MAX_IMAGE_SIZE_BYTES) {
             throw new ImageSizeLimitExceededException("Cada imagem enviada deve ter no máximo 2MB");
@@ -195,6 +193,10 @@ public class QuestionService {
         if (sizeOne + sizeTwo > ImageValidator.MAX_TOTAL_IMAGES_SIZE_BYTES) {
             throw new ImageSizeLimitExceededException("O total das imagens enviadas deve ser de no máximo 4MB");
         }
+    }
+
+    private boolean isStoredUrl(String value) {
+        return value != null && (value.startsWith("http://") || value.startsWith("https://"));
     }
 
     public List<QuestionResponse> find10QuestionsByThemeIdAndCreatorId(Long idTheme, String token){

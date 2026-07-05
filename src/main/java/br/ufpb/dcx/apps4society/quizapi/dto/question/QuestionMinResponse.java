@@ -6,8 +6,8 @@ public record QuestionMinResponse(
         Long id,
         String title,
         String imageUrl,
-        String imageBase64One,
-        String imageBase64Two,
+        String imageOneUrl,
+        String imageTwoUrl,
         String imagesOrder,
         ThemeResponse theme
 ) {

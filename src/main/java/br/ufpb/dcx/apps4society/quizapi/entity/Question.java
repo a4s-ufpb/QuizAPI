@@ -1,6 +1,5 @@
 package br.ufpb.dcx.apps4society.quizapi.entity;
 
-import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionImagesResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionMinResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionQuizResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
@@ -24,10 +23,8 @@ public class Question implements Serializable {
     private Long id;
     private String title;
     private String imageUrl;
-    @Column(columnDefinition = "TEXT")
-    private String imageBase64One;
-    @Column(columnDefinition = "TEXT")
-    private String imageBase64Two;
+    private String imageOneUrl;
+    private String imageTwoUrl;
     private String imagesOrder;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Theme theme;
@@ -42,11 +39,11 @@ public class Question implements Serializable {
 
     }
 
-    public Question(QuestionRequest questionRequest, Theme theme, User creator) {
+    public Question(QuestionRequest questionRequest, Theme theme, User creator, String imageOneUrl, String imageTwoUrl) {
         this.title = questionRequest.title();
         this.imageUrl = questionRequest.imageUrl();
-        this.imageBase64One = questionRequest.imageBase64One();
-        this.imageBase64Two = questionRequest.imageBase64Two();
+        this.imageOneUrl = imageOneUrl;
+        this.imageTwoUrl = imageTwoUrl;
         this.imagesOrder = questionRequest.imagesOrder();
         this.theme = theme;
         this.creator = creator;
@@ -61,20 +58,16 @@ public class Question implements Serializable {
     }
 
     public QuestionResponse entityToResponse(){
-        return new QuestionResponse(id,title,imageUrl,imageBase64One,imageBase64Two,imagesOrder, creator.getUuid(),theme.entityToResponse(),
+        return new QuestionResponse(id,title,imageUrl,imageOneUrl,imageTwoUrl,imagesOrder, creator.getUuid(),theme.entityToResponse(),
                 alternatives.stream().map(Alternative::entityToResponse).toList());
     }
 
     public QuestionMinResponse entityToMinResponse(){
-        return new QuestionMinResponse(id, title, imageUrl, imageBase64One, imageBase64Two, imagesOrder, theme.entityToResponse());
-    }
-
-    public QuestionImagesResponse entityToImagesResponse(){
-        return new QuestionImagesResponse(id, imageUrl, imageBase64One, imageBase64Two, imagesOrder);
+        return new QuestionMinResponse(id, title, imageUrl, imageOneUrl, imageTwoUrl, imagesOrder, theme.entityToResponse());
     }
 
     public QuestionQuizResponse entityToQuizResponse(){
-        return new QuestionQuizResponse(id, title, imageUrl, imagesOrder,
+        return new QuestionQuizResponse(id, title, imageUrl, imageOneUrl, imageTwoUrl, imagesOrder,
                 alternatives.stream().map(Alternative::entityToResponse).toList());
     }
 
@@ -110,20 +103,20 @@ public class Question implements Serializable {
         this.imageUrl = imageUrl;
     }
 
-    public String getImageBase64One() {
-        return imageBase64One;
+    public String getImageOneUrl() {
+        return imageOneUrl;
     }
 
-    public void setImageBase64One(String imageBase64One) {
-        this.imageBase64One = imageBase64One;
+    public void setImageOneUrl(String imageOneUrl) {
+        this.imageOneUrl = imageOneUrl;
     }
 
-    public String getImageBase64Two() {
-        return imageBase64Two;
+    public String getImageTwoUrl() {
+        return imageTwoUrl;
     }
 
-    public void setImageBase64Two(String imageBase64Two) {
-        this.imageBase64Two = imageBase64Two;
+    public void setImageTwoUrl(String imageTwoUrl) {
+        this.imageTwoUrl = imageTwoUrl;
     }
 
     public String getImagesOrder() {

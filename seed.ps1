@@ -118,6 +118,78 @@ $questionsData = @(
             @{ Text = "Oceano Pacífico"; Correct = $true },
             @{ Text = "Oceano Ártico"; Correct = $false }
         )
+    },
+    @{
+        Title = "Qual é o maior país do mundo em área territorial?"
+        Alternatives = @(
+            @{ Text = "China"; Correct = $false },
+            @{ Text = "Rússia"; Correct = $true },
+            @{ Text = "Canadá"; Correct = $false },
+            @{ Text = "Estados Unidos"; Correct = $false }
+        )
+    },
+    @{
+        Title = "Qual é o maior deserto do mundo?"
+        Alternatives = @(
+            @{ Text = "Deserto do Saara"; Correct = $false },
+            @{ Text = "Deserto da Antártida"; Correct = $true },
+            @{ Text = "Deserto de Gobi"; Correct = $false },
+            @{ Text = "Deserto do Atacama"; Correct = $false }
+        )
+    },
+    @{
+        Title = "Qual é o rio mais extenso do mundo?"
+        Alternatives = @(
+            @{ Text = "Rio Nilo"; Correct = $false },
+            @{ Text = "Rio Amazonas"; Correct = $true },
+            @{ Text = "Rio Yangtzé"; Correct = $false },
+            @{ Text = "Rio Mississippi"; Correct = $false }
+        )
+    },
+    @{
+        Title = "Qual continente é conhecido como o 'Berço da Humanidade'?"
+        Alternatives = @(
+            @{ Text = "Ásia"; Correct = $false },
+            @{ Text = "Europa"; Correct = $false },
+            @{ Text = "África"; Correct = $true },
+            @{ Text = "Oceania"; Correct = $false }
+        )
+    },
+    @{
+        Title = "Qual é a montanha mais alta do mundo?"
+        Alternatives = @(
+            @{ Text = "K2"; Correct = $false },
+            @{ Text = "Monte Everest"; Correct = $true },
+            @{ Text = "Monte Kilimanjaro"; Correct = $false },
+            @{ Text = "Aconcágua"; Correct = $false }
+        )
+    },
+    @{
+        Title = "Qual é o menor país do mundo em área territorial?"
+        Alternatives = @(
+            @{ Text = "Mônaco"; Correct = $false },
+            @{ Text = "San Marino"; Correct = $false },
+            @{ Text = "Vaticano"; Correct = $true },
+            @{ Text = "Liechtenstein"; Correct = $false }
+        )
+    },
+    @{
+        Title = "Qual estreito separa a Europa da África?"
+        Alternatives = @(
+            @{ Text = "Estreito de Bering"; Correct = $false },
+            @{ Text = "Estreito de Gibraltar"; Correct = $true },
+            @{ Text = "Estreito de Ormuz"; Correct = $false },
+            @{ Text = "Estreito de Magalhães"; Correct = $false }
+        )
+    },
+    @{
+        Title = "Qual é a maior floresta tropical do mundo?"
+        Alternatives = @(
+            @{ Text = "Floresta Amazônica"; Correct = $true },
+            @{ Text = "Floresta Boreal"; Correct = $false },
+            @{ Text = "Floresta de Bornéu"; Correct = $false },
+            @{ Text = "Floresta do Congo"; Correct = $false }
+        )
     }
 )
 

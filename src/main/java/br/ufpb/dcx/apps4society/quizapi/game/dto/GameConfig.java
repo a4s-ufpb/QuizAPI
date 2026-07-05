@@ -1,6 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.game.dto;
 
 import br.ufpb.dcx.apps4society.quizapi.game.model.AdvanceMode;
+import br.ufpb.dcx.apps4society.quizapi.game.model.GameStyle;
 import br.ufpb.dcx.apps4society.quizapi.game.model.RoomMode;
 import br.ufpb.dcx.apps4society.quizapi.game.model.ScoringMode;
 
@@ -15,10 +16,11 @@ public record GameConfig(
         AdvanceMode advanceMode,
         Integer questionTimeSeconds,
         Integer questionCount,
-        Integer maxPlayersPerTeam
+        Integer maxPlayersPerTeam,
+        GameStyle gameStyle
 ) {
     public static GameConfig defaults() {
-        return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.HOST, 20, 10, null);
+        return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.HOST, 120, 10, null, GameStyle.NORMAL);
     }
 
     /** Preenche campos nulos com os defaults e aplica limites saudáveis. */
@@ -37,7 +39,8 @@ public record GameConfig(
                 advanceMode != null ? advanceMode : d.advanceMode(),
                 time,
                 count,
-                maxPerTeam
+                maxPerTeam,
+                gameStyle != null ? gameStyle : d.gameStyle()
         );
     }
 }

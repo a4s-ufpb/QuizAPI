@@ -167,6 +167,24 @@ public class UserService {
         return user;
     }
 
+    // Só usuários logados podem curtir (findUserByToken lança exceção se o
+    // token for inválido), e não pode curtir a si mesmo.
+    public UserResponse likeUser(UUID targetId, String token) throws UserNotHavePermissionException {
+        User liker = findUserByToken(token);
+
+        User target = userRepository.findById(targetId)
+                .orElseThrow(() -> new UserNotFoundException(Messages.USER_NOT_FOUND));
+
+        if (liker.getUuid().equals(target.getUuid())){
+            throw new UserNotHavePermissionException("Você não pode curtir a si mesmo");
+        }
+
+        target.addLike();
+        userRepository.save(target);
+
+        return target.entityToResponse();
+    }
+
     public AdminResponse validateIfUserIsAdmin(String token, UUID id) throws UserNotHavePermissionException {
         User loggedUser = findUserByToken(token);
 

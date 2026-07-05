@@ -11,3 +11,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  # Migrations do Flyway são específicas de Postgres — nos testes (H2) o
+  # schema continua gerenciado pelo Hibernate direto.
+  flyway:
+    enabled: false

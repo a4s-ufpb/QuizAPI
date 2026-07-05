@@ -16,6 +16,10 @@ public class GamePlayer {
     private Long currentAnswerId;
     private String avatar;
     private boolean captain;
+    /** UUID da conta real do jogador, se estiver logado (null = convidado). */
+    private String userUuid;
+    /** Marca de tempo da resposta atual — usado pelo poder "roubar pontos" (quem responde primeiro). */
+    private long answeredAtMillis;
 
     public GamePlayer(String id, String name, boolean host) {
         this.id = id;
@@ -27,6 +31,7 @@ public class GamePlayer {
         this.answeredCurrent = false;
         this.currentAnswerId = null;
         this.lastGained = 0;
+        this.answeredAtMillis = 0;
     }
 
     public void resetForNewGame() {
@@ -56,4 +61,8 @@ public class GamePlayer {
     public void setAvatar(String avatar) { this.avatar = avatar; }
     public boolean isCaptain() { return captain; }
     public void setCaptain(boolean captain) { this.captain = captain; }
+    public String getUserUuid() { return userUuid; }
+    public void setUserUuid(String userUuid) { this.userUuid = userUuid; }
+    public long getAnsweredAtMillis() { return answeredAtMillis; }
+    public void setAnsweredAtMillis(long answeredAtMillis) { this.answeredAtMillis = answeredAtMillis; }
 }

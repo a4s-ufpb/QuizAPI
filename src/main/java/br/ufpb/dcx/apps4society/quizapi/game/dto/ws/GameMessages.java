@@ -9,7 +9,7 @@ import br.ufpb.dcx.apps4society.quizapi.game.dto.GameConfig;
 public final class GameMessages {
     private GameMessages() {}
 
-    public record Join(String code, String playerId, String name, String avatar) {}
+    public record Join(String code, String playerId, String name, String avatar, String userUuid) {}
 
     public record PlayerRef(String code, String playerId) {}
 
@@ -30,6 +30,9 @@ public final class GameMessages {
     public record ChangeQuiz(String code, String hostId, Long themeId) {}
 
     public record ConfigUpdate(String code, String hostId, GameConfig config) {}
+
+    /** Poder escolhido pelo líder (modo Diversão) pra valer na próxima questão. {@code power} nulo limpa a escolha. */
+    public record SetPower(String code, String hostId, String power) {}
 
     public record Chat(String code, String playerId, String content) {}
 

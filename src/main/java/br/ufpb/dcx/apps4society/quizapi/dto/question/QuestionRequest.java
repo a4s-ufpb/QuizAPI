@@ -11,10 +11,11 @@ public record QuestionRequest(
         @Size(max = 255, message = "Número de caracteres inválido")
         @URL(message = "URL inválida")
         String imageUrl,
+        // Base64 (upload novo) ou URL já armazenada no MinIO (edição sem trocar imagem).
         @Size(max = 2_800_000, message = "Imagem excede o tamanho máximo permitido")
-        String imageBase64One,
+        String imageOneUrl,
         @Size(max = 2_800_000, message = "Imagem excede o tamanho máximo permitido")
-        String imageBase64Two,
+        String imageTwoUrl,
         @Size(max = 50, message = "Número de caracteres inválido")
         String imagesOrder) {
 }

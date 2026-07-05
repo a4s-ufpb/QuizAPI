@@ -6,4 +6,6 @@ spring:
     password: ${DEV_PASSWORD:quiz123}
   jpa:
     hibernate:
-      ddl-auto: update
+      # Schema agora é gerenciado pelo Flyway (db/migration) — Hibernate só
+      # valida se o mapeamento das entidades bate com o schema real.
+      ddl-auto: validate

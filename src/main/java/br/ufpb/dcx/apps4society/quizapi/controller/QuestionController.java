@@ -1,6 +1,5 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
-import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionImagesResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionQuizResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionUpdate;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
@@ -85,16 +84,6 @@ public class QuestionController {
     public ResponseEntity<QuestionResponse> updateQuestion(@PathVariable Long id, @RequestBody @Valid QuestionUpdate questionUpdate,
                                                            @RequestHeader("Authorization") String token) throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         return ResponseEntity.ok(service.updateQuestion(id, questionUpdate, token));
-    }
-
-    @Operation(tags = "Question", summary = "Find Question Images (public, sem gabarito — usado no multiplayer)", responses ={
-            @ApiResponse(description = "Success", responseCode = "200", content = @Content(schema = @Schema(implementation = QuestionImagesResponse.class))),
-            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-    } )
-    @GetMapping(value = "/{id}/images", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<QuestionImagesResponse> findQuestionImages(@PathVariable Long id){
-        return ResponseEntity.ok(service.findQuestionImages(id));
     }
 
     @Operation(tags = "Question", summary = "Find 10 Questions by Theme", responses ={

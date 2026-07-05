@@ -37,8 +37,7 @@ public class SecurityConfig {
                     request.requestMatchers("/v1/game/**").permitAll();
                     request.requestMatchers(HttpMethod.GET,"/v1/theme/**").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/question/quiz/**").permitAll();
-                    request.requestMatchers(HttpMethod.GET, "/v1/question/*/images").permitAll();
-                    request.requestMatchers(HttpMethod.POST,"/v1/user/**").permitAll();
+                    request.requestMatchers(HttpMethod.POST, "/v1/user/register", "/v1/user/login").permitAll();
                     request.requestMatchers(HttpMethod.POST, "/v1/statistic").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/theme/creator").authenticated()
                             .anyRequest().authenticated();

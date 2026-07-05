@@ -21,6 +21,7 @@ public class User implements UserDetails {
     private String password;
     @Enumerated(EnumType.STRING)
     private Role role;
+    private int likes = 0;
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
     private List<Theme> themes = new ArrayList<>();
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
@@ -58,7 +59,15 @@ public class User implements UserDetails {
     }
 
     public UserResponse entityToResponse(){
-        return new UserResponse(uuid,name,email,role);
+        return new UserResponse(uuid,name,email,role,likes);
+    }
+
+    public void addLike(){
+        this.likes++;
+    }
+
+    public int getLikes() {
+        return likes;
     }
 
     public void addTheme(Theme theme){
