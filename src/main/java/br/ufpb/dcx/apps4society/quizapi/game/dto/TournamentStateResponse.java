@@ -14,7 +14,8 @@ public record TournamentStateResponse(
         List<List<MatchView>> rounds,
         String championId
 ) {
-    public record PlayerView(String id, String name, boolean host, boolean eliminated) {}
+    public record PlayerView(String id, String name, boolean host, boolean eliminated,
+                             String title, String frame, String banner) {}
 
     public record MatchView(
             String id,

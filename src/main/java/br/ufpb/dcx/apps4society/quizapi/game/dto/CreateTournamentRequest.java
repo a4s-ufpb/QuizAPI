@@ -8,5 +8,6 @@ public record CreateTournamentRequest(
         Long themeId,
         Integer questionCount,
         Integer questionTimeSeconds,
-        Integer maxPlayers
+        Integer maxPlayers,
+        String hostUuid
 ) {}

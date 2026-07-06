@@ -33,7 +33,7 @@ public class TournamentController {
         int clamped = Math.min(requested, cap);
         CreateTournamentRequest adjusted = new CreateTournamentRequest(
                 request.hostId(), request.hostName(), request.name(), request.themeId(),
-                request.questionCount(), request.questionTimeSeconds(), clamped);
+                request.questionCount(), request.questionTimeSeconds(), clamped, request.hostUuid());
         return ResponseEntity.status(201).body(tournamentService.createTournament(adjusted));
     }
 
@@ -49,7 +49,7 @@ public class TournamentController {
     @PostMapping("/{code}/join")
     public ResponseEntity<?> join(@PathVariable String code, @RequestBody Map<String, String> body) {
         try {
-            return ResponseEntity.ok(tournamentService.join(code, body.get("playerId"), body.get("name")));
+            return ResponseEntity.ok(tournamentService.join(code, body.get("playerId"), body.get("name"), body.get("userUuid")));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {

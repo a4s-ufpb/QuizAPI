@@ -1,6 +1,7 @@
 package br.ufpb.dcx.apps4society.quizapi.game;
 
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
+import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.game.dto.CreateRoomRequest;
 import br.ufpb.dcx.apps4society.quizapi.game.dto.CreateTournamentRequest;
 import br.ufpb.dcx.apps4society.quizapi.game.dto.GameConfig;
@@ -8,6 +9,7 @@ import br.ufpb.dcx.apps4society.quizapi.game.dto.RoomStateResponse;
 import br.ufpb.dcx.apps4society.quizapi.game.dto.TournamentStateResponse;
 import br.ufpb.dcx.apps4society.quizapi.game.model.*;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
+import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -34,10 +36,13 @@ public class TournamentService {
 
     private final GameRoomService gameRoomService;
     private final ThemeRepository themeRepository;
+    private final UserRepository userRepository;
 
-    public TournamentService(GameRoomService gameRoomService, ThemeRepository themeRepository) {
+    public TournamentService(GameRoomService gameRoomService, ThemeRepository themeRepository,
+                             UserRepository userRepository) {
         this.gameRoomService = gameRoomService;
         this.themeRepository = themeRepository;
+        this.userRepository = userRepository;
         this.scheduler.scheduleAtFixedRate(this::pollActiveMatches, 3, 3, TimeUnit.SECONDS);
         this.scheduler.scheduleAtFixedRate(this::sweepIdleTournaments, 10, 10, TimeUnit.MINUTES);
     }
@@ -60,12 +65,14 @@ public class TournamentService {
             Theme theme = themeRepository.findById(request.themeId()).orElse(null);
             tournament.setThemeName(theme != null ? theme.getName() : null);
         }
-        tournament.getPlayers().put(hostId, new TournamentPlayer(hostId, safeName(request.hostName(), "Host"), true));
+        TournamentPlayer hostPlayer = new TournamentPlayer(hostId, safeName(request.hostName(), "Host"), true);
+        applyCosmetics(hostPlayer, request.hostUuid());
+        tournament.getPlayers().put(hostId, hostPlayer);
         tournaments.put(code, tournament);
         return toState(tournament);
     }
 
-    public synchronized TournamentStateResponse join(String code, String playerId, String name) {
+    public synchronized TournamentStateResponse join(String code, String playerId, String name, String userUuid) {
         Tournament tournament = requireTournament(code);
         if (tournament.getStatus() != TournamentStatus.LOBBY) {
             throw new IllegalStateException("O torneio já começou.");
@@ -75,9 +82,24 @@ public class TournamentService {
         if (isNew && nonHost >= tournament.getMaxPlayers()) {
             throw new IllegalStateException("O torneio está cheio.");
         }
-        tournament.getPlayers().computeIfAbsent(playerId,
+        TournamentPlayer player = tournament.getPlayers().computeIfAbsent(playerId,
                 id -> new TournamentPlayer(id, safeName(name, "Jogador"), false));
+        applyCosmetics(player, userUuid);
         return toState(tournament);
+    }
+
+    /** Copia os cosméticos equipados da conta real (só visual). Convidado -> nada. */
+    private void applyCosmetics(TournamentPlayer player, String userUuid) {
+        if (userUuid == null || userUuid.isBlank()) return;
+        try {
+            User user = userRepository.findById(java.util.UUID.fromString(userUuid)).orElse(null);
+            if (user == null) return;
+            player.setTitle(user.getEquippedTitle());
+            player.setFrame(user.getEquippedFrame());
+            player.setBanner(user.getEquippedBanner());
+        } catch (IllegalArgumentException ignored) {
+            // userUuid inválido (ex.: convidado) — sem cosméticos.
+        }
     }
 
     public synchronized TournamentStateResponse getState(String code) {
@@ -213,7 +235,8 @@ public class TournamentService {
 
     private TournamentStateResponse toState(Tournament tournament) {
         List<TournamentStateResponse.PlayerView> players = tournament.getPlayers().values().stream()
-                .map(p -> new TournamentStateResponse.PlayerView(p.getId(), p.getName(), p.isHost(), p.isEliminated()))
+                .map(p -> new TournamentStateResponse.PlayerView(p.getId(), p.getName(), p.isHost(), p.isEliminated(),
+                        p.getTitle(), p.getFrame(), p.getBanner()))
                 .toList();
 
         List<List<TournamentStateResponse.MatchView>> rounds = tournament.getRounds().stream()
