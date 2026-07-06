@@ -6,9 +6,11 @@ import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.ImageSizeLimitExceededException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeAlreadyExistsException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
+import br.ufpb.dcx.apps4society.quizapi.util.ImageValidator;
 import br.ufpb.dcx.apps4society.quizapi.util.Messages;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -19,17 +21,21 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ThemeService {
+    private static final String THEME_IMAGE_PREFIX = "themes/";
+
     private ThemeRepository repository;
     private UserService userService;
+    private ImageStorageService imageStorageService;
 
     @Autowired
-    public ThemeService(ThemeRepository repository, UserService userService) {
+    public ThemeService(ThemeRepository repository, UserService userService, ImageStorageService imageStorageService) {
         this.repository = repository;
         this.userService = userService;
+        this.imageStorageService = imageStorageService;
     }
 
     @CacheEvict(value = "themes", allEntries = true)
-    public ThemeResponse insertTheme(ThemeRequest themeRequest, String token) throws ThemeAlreadyExistsException {
+    public ThemeResponse insertTheme(ThemeRequest themeRequest, String token) throws ThemeAlreadyExistsException, ImageSizeLimitExceededException {
         Theme theme = repository.findByNameIgnoreCase(themeRequest.name());
 
         if (theme != null){
@@ -38,11 +44,26 @@ public class ThemeService {
 
         User user = userService.findUserByToken(token);
 
-        Theme saveTheme = new Theme(themeRequest.name(),themeRequest.imageUrl(), user);
+        validateImage(themeRequest.imageUrl());
+        String imageUrl = imageStorageService.upload(themeRequest.imageUrl(), THEME_IMAGE_PREFIX);
+
+        Theme saveTheme = new Theme(themeRequest.name(), imageUrl, user);
         user.addTheme(saveTheme);
 
         repository.save(saveTheme);
         return saveTheme.entityToResponse();
+    }
+
+    // URL já armazenada (edição sem trocar a imagem) não conta pro limite —
+    // só payload base64 novo passa por aqui de fato.
+    private void validateImage(String imageBase64OrUrl) throws ImageSizeLimitExceededException {
+        boolean isStoredUrl = imageBase64OrUrl != null
+                && (imageBase64OrUrl.startsWith("http://") || imageBase64OrUrl.startsWith("https://"));
+        int size = isStoredUrl ? 0 : ImageValidator.decodedSizeInBytes(imageBase64OrUrl);
+
+        if (size > ImageValidator.MAX_THEME_IMAGE_SIZE_BYTES) {
+            throw new ImageSizeLimitExceededException("A imagem do tema deve ter no máximo 1MB");
+        }
     }
 
     @CacheEvict(value = "themes", allEntries = true)
@@ -103,7 +124,7 @@ public class ThemeService {
     }
 
     @CacheEvict(value = "themes", allEntries = true)
-    public ThemeResponse updateTheme(Long id, ThemeUpdate themeUpdate, String token) throws UserNotHavePermissionException, ThemeAlreadyExistsException {
+    public ThemeResponse updateTheme(Long id, ThemeUpdate themeUpdate, String token) throws UserNotHavePermissionException, ThemeAlreadyExistsException, ImageSizeLimitExceededException {
         User user = userService.findUserByToken(token);
 
         Theme theme = repository.findById(id)
@@ -119,14 +140,17 @@ public class ThemeService {
             throw new ThemeAlreadyExistsException("Esse tema já foi cadastrado, tente novamente com outro Nome");
         }
 
-        updateData(theme, themeUpdate);
+        validateImage(themeUpdate.imageUrl());
+        String imageUrl = imageStorageService.upload(themeUpdate.imageUrl(), THEME_IMAGE_PREFIX);
+
+        updateData(theme, themeUpdate, imageUrl);
         repository.save(theme);
 
         return theme.entityToResponse();
     }
 
-    private void updateData(Theme theme, ThemeUpdate themeUpdate){
+    private void updateData(Theme theme, ThemeUpdate themeUpdate, String imageUrl){
         theme.setName(themeUpdate.name());
-        theme.setImageUrl(themeUpdate.imageUrl());
+        theme.setImageUrl(imageUrl);
     }
 }

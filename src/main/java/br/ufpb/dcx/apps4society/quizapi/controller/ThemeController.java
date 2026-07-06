@@ -4,6 +4,7 @@ import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeUpdate;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeResponse;
 import br.ufpb.dcx.apps4society.quizapi.service.ThemeService;
+import br.ufpb.dcx.apps4society.quizapi.service.exception.ImageSizeLimitExceededException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeAlreadyExistsException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +42,7 @@ public class ThemeController {
             @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
     } )
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ThemeResponse> insertTheme(@RequestBody @Valid ThemeRequest themeRequest, @RequestHeader("Authorization") String token) throws ThemeAlreadyExistsException {
+    public ResponseEntity<ThemeResponse> insertTheme(@RequestBody @Valid ThemeRequest themeRequest, @RequestHeader("Authorization") String token) throws ThemeAlreadyExistsException, ImageSizeLimitExceededException {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.insertTheme(themeRequest, token));
     }
 
@@ -107,7 +108,7 @@ public class ThemeController {
     @PatchMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ThemeResponse> updateTheme(@PathVariable Long id,
                                                      @RequestBody @Valid ThemeUpdate themeUpdate,
-                                                     @RequestHeader("Authorization") String token) throws UserNotHavePermissionException, ThemeAlreadyExistsException {
+                                                     @RequestHeader("Authorization") String token) throws UserNotHavePermissionException, ThemeAlreadyExistsException, ImageSizeLimitExceededException {
         return ResponseEntity.ok(service.updateTheme(id,themeUpdate, token));
     }
 

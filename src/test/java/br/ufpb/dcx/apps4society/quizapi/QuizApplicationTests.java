@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -25,6 +26,7 @@ import static io.restassured.RestAssured.basePath;
 // refused" a partir da 2ª classe. Um único container vivo por toda a JVM de
 // teste (encerrado pelo Ryuk só ao final) evita essa dessincronia.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@ActiveProfiles("test")
 public class QuizApplicationTests {
 	public static final String INVALID_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGdtYWlsLmNvbSIsImlhTcxMDI3Mzg0MCwiZXhwIjoxNzEwMjc3NDQwfQ.tIr6mbb-LmAbQQxYIOTSk1ZctMAijDcQKp2M";
 	public static MockUser mockUser;

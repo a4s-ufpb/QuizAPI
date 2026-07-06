@@ -1,5 +1,6 @@
 package br.ufpb.dcx.apps4society.quizapi.config;
 
+import br.ufpb.dcx.apps4society.quizapi.security.RateLimitFilter;
 import br.ufpb.dcx.apps4society.quizapi.security.SecurityFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -21,9 +22,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
     private SecurityFilter securityFilter;
+    private RateLimitFilter rateLimitFilter;
     @Autowired
-    public SecurityConfig(SecurityFilter securityFilter) {
+    public SecurityConfig(SecurityFilter securityFilter, RateLimitFilter rateLimitFilter) {
         this.securityFilter = securityFilter;
+        this.rateLimitFilter = rateLimitFilter;
     }
 
     @Bean
@@ -35,8 +38,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> {
                     request.requestMatchers("/", "/swagger-resources/**", "/swagger-ui/**", "/v3/api-docs/**", "/ws/**").permitAll();
                     request.requestMatchers("/v1/game/**").permitAll();
+                    request.requestMatchers("/v1/tournament/**").permitAll();
                     request.requestMatchers(HttpMethod.GET,"/v1/theme/**").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/question/quiz/**").permitAll();
+                    request.requestMatchers(HttpMethod.GET, "/v1/user/*/public-profile").permitAll();
                     request.requestMatchers(HttpMethod.POST, "/v1/user/register", "/v1/user/login").permitAll();
                     request.requestMatchers(HttpMethod.POST, "/v1/statistic").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/theme/creator").authenticated()
@@ -44,6 +49,7 @@ public class SecurityConfig {
                 })
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitFilter, SecurityFilter.class)
                 .build();
     }
 

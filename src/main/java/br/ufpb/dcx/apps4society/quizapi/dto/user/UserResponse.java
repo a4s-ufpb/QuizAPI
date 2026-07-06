@@ -11,6 +11,10 @@ public record UserResponse(
         Role role,
         int likes,
         int xp,
-        int level
+        int level,
+        int coins,
+        String equippedTitle,
+        String equippedFrame,
+        String equippedBanner
 ) {
 }

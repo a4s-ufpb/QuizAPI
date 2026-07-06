@@ -6,6 +6,7 @@ import br.ufpb.dcx.apps4society.quizapi.dto.score.ScoreResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.Score;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
+import br.ufpb.dcx.apps4society.quizapi.repository.GlobalRankingProjection;
 import br.ufpb.dcx.apps4society.quizapi.repository.ScoreRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
@@ -56,9 +57,10 @@ public class ScoreService {
     }
 
     public Page<GlobalRankingResponse> findGlobalRanking(String period, Pageable pageable) {
-        LocalDateTime since = "WEEK".equalsIgnoreCase(period) ? LocalDateTime.now().minusWeeks(1) : null;
+        Page<GlobalRankingProjection> ranking = "WEEK".equalsIgnoreCase(period)
+                ? scoreRepository.findGlobalRankingSince(LocalDateTime.now().minusWeeks(1), pageable)
+                : scoreRepository.findGlobalRankingAll(pageable);
 
-        return scoreRepository.findGlobalRanking(since, pageable)
-                .map(row -> new GlobalRankingResponse(row.getUser().entityToResponse(), row.getTotal()));
+        return ranking.map(row -> new GlobalRankingResponse(row.getUser().entityToResponse(), row.getTotal()));
     }
 }

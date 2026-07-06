@@ -1,6 +1,8 @@
 package br.ufpb.dcx.apps4society.quizapi.controller;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.user.*;
+import br.ufpb.dcx.apps4society.quizapi.entity.User;
+import br.ufpb.dcx.apps4society.quizapi.service.AchievementService;
 import br.ufpb.dcx.apps4society.quizapi.service.UserService;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserAlreadyExistsException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
@@ -26,10 +28,12 @@ import java.util.UUID;
 @Tag(name = "User", description = "Users of Quiz")
 public class UserController {
     private UserService userService;
+    private AchievementService achievementService;
 
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, AchievementService achievementService) {
         this.userService = userService;
+        this.achievementService = achievementService;
     }
 
     @Operation(tags = "User", summary = "Register User", responses ={
@@ -141,6 +145,20 @@ public class UserController {
     @PostMapping(value = "/{id}/like", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserResponse> likeUser(@PathVariable UUID id, @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
         return ResponseEntity.ok(userService.likeUser(id, token));
+    }
+
+    @Operation(tags = "User", summary = "Find Public Profile (no login required)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content(schema = @Schema(implementation = PublicProfileResponse.class))),
+            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
+    } )
+    @GetMapping(value = "/{id}/public-profile")
+    public ResponseEntity<PublicProfileResponse> findPublicProfile(@PathVariable UUID id) {
+        User user = userService.findUserEntityById(id);
+        return ResponseEntity.ok(new PublicProfileResponse(
+                user.getUuid(), user.getName(), user.getLikes(), user.getXp(), user.getLevel(),
+                user.getEquippedTitle(), user.getEquippedFrame(), user.getEquippedBanner(),
+                achievementService.findAchievements(user)
+        ));
     }
 
     @GetMapping(value = "/search")

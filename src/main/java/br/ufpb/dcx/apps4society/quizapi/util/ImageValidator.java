@@ -3,6 +3,7 @@ package br.ufpb.dcx.apps4society.quizapi.util;
 public class ImageValidator {
     public static final int MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
     public static final int MAX_TOTAL_IMAGES_SIZE_BYTES = 4 * 1024 * 1024;
+    public static final int MAX_THEME_IMAGE_SIZE_BYTES = 1 * 1024 * 1024;
 
     private ImageValidator() {
     }

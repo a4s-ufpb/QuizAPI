@@ -25,9 +25,15 @@ public class Score implements Serializable {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
     @Transient
-    private final Double HIT_VALUE = 97.45;
+    private final Double HIT_VALUE = 100.0;
+    // Penalidade por segundo bem mais suave que antes (era 1.26/s, o que zerava
+    // a pontuação de quem acertava pouco e demorava um pouco).
     @Transient
-    private final Double REDUCE_VALUE = 1.26;
+    private final Double REDUCE_VALUE = 0.35;
+    // Cada acerto vale no mínimo isso, independentemente do tempo — garante que
+    // quem acertou ao menos 1 questão nunca fique com pontuação zerada.
+    @Transient
+    private final Double MIN_VALUE_PER_HIT = 20.0;
 
     public Score(){}
 
@@ -39,10 +45,11 @@ public class Score implements Serializable {
 
     private Double calculateResult(Integer numberOfHits, Integer totalTime){
         double result = (numberOfHits * HIT_VALUE) - (totalTime * REDUCE_VALUE);
+        // Piso: cada acerto vale ao menos MIN_VALUE_PER_HIT. Sem acertos -> 0.
+        double floor = numberOfHits * MIN_VALUE_PER_HIT;
+        if (result < floor) result = floor;
 
         String formattedResult = new DecimalFormat("#.###").format(result).replace(",",".");
-
-        if (result < 0) return  0.0;
         return Double.valueOf(formattedResult);
     }
 

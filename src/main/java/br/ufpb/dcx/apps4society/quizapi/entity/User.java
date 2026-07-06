@@ -24,6 +24,15 @@ public class User implements UserDetails {
     private int likes = 0;
     private int xp = 0;
     private int level = 1;
+    private int coins = 0;
+    // Cosméticos equipados (códigos de itens da loja, null = nenhum). Puramente
+    // estético: título ao lado do nome, moldura no avatar e banner de fundo.
+    @Column(name = "equipped_title")
+    private String equippedTitle;
+    @Column(name = "equipped_frame")
+    private String equippedFrame;
+    @Column(name = "equipped_banner")
+    private String equippedBanner;
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
     private List<Theme> themes = new ArrayList<>();
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
@@ -61,8 +70,16 @@ public class User implements UserDetails {
     }
 
     public UserResponse entityToResponse(){
-        return new UserResponse(uuid,name,email,role,likes,xp,level);
+        return new UserResponse(uuid,name,email,role,likes,xp,level,coins,
+                equippedTitle,equippedFrame,equippedBanner);
     }
+
+    public String getEquippedTitle() { return equippedTitle; }
+    public String getEquippedFrame() { return equippedFrame; }
+    public String getEquippedBanner() { return equippedBanner; }
+    public void setEquippedTitle(String equippedTitle) { this.equippedTitle = equippedTitle; }
+    public void setEquippedFrame(String equippedFrame) { this.equippedFrame = equippedFrame; }
+    public void setEquippedBanner(String equippedBanner) { this.equippedBanner = equippedBanner; }
 
     public void addLike(){
         this.likes++;
@@ -86,6 +103,21 @@ public class User implements UserDetails {
 
     public int getLevel() {
         return level;
+    }
+
+    public int getCoins() {
+        return coins;
+    }
+
+    public void addCoins(int amount) {
+        this.coins += amount;
+    }
+
+    /** @return true se tinha saldo suficiente e o débito foi aplicado. */
+    public boolean spendCoins(int amount) {
+        if (coins < amount) return false;
+        coins -= amount;
+        return true;
     }
 
     public void addTheme(Theme theme){

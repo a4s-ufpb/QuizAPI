@@ -26,7 +26,11 @@ public record RoomStateResponse(
             int score,
             String avatar,
             boolean captain,
-            String userUuid
+            String userUuid,
+            boolean eliminated,
+            String title,
+            String frame,
+            String banner
     ) {}
 
     public record TeamView(String id, String name, int score, String avatar, String captainId) {}

@@ -42,6 +42,8 @@ class ThemeServiceTest {
     ThemeRepository repository;
     @Mock
     UserService userService;
+    @Mock
+    ImageStorageService imageStorageService;
     @InjectMocks
     ThemeService themeService;
 
@@ -51,10 +53,11 @@ class ThemeServiceTest {
         mockTheme = new MockTheme();
         mockUser = new MockUser();
         mockQuestion = new MockQuestion();
+        lenient().when(imageStorageService.upload(any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
-    void insertTheme() throws ThemeAlreadyExistsException {
+    void insertTheme() throws ThemeAlreadyExistsException, br.ufpb.dcx.apps4society.quizapi.service.exception.ImageSizeLimitExceededException {
         ThemeRequest themeRequest = mockTheme.mockRequest(1);
         User user = mockUser.mockEntity(1);
         Theme theme = mockTheme.mockEntity(1);
@@ -201,7 +204,7 @@ class ThemeServiceTest {
     }
 
     @Test
-    void updateTheme() throws UserNotHavePermissionException, ThemeAlreadyExistsException {
+    void updateTheme() throws UserNotHavePermissionException, ThemeAlreadyExistsException, br.ufpb.dcx.apps4society.quizapi.service.exception.ImageSizeLimitExceededException {
         ThemeUpdate themeUpdate = mockTheme.mockThemeUpdate();
         User user = mockUser.mockEntity(1);
         Theme theme = mockTheme.mockEntity(1, user);

@@ -20,6 +20,12 @@ public class GamePlayer {
     private String userUuid;
     /** Marca de tempo da resposta atual — usado pelo poder "roubar pontos" (quem responde primeiro). */
     private long answeredAtMillis;
+    /** Modo Sobrevivência: errou (ou não respondeu) uma questão — vira espectador pro resto da partida. */
+    private boolean eliminated;
+    /** Cosméticos equipados (só jogadores logados) — puramente visuais no lobby/placares. */
+    private String title;
+    private String frame;
+    private String banner;
 
     public GamePlayer(String id, String name, boolean host) {
         this.id = id;
@@ -39,6 +45,7 @@ public class GamePlayer {
         this.lastGained = 0;
         this.answeredCurrent = false;
         this.currentAnswerId = null;
+        this.eliminated = false;
     }
 
     public String getId() { return id; }
@@ -65,4 +72,12 @@ public class GamePlayer {
     public void setUserUuid(String userUuid) { this.userUuid = userUuid; }
     public long getAnsweredAtMillis() { return answeredAtMillis; }
     public void setAnsweredAtMillis(long answeredAtMillis) { this.answeredAtMillis = answeredAtMillis; }
+    public boolean isEliminated() { return eliminated; }
+    public void setEliminated(boolean eliminated) { this.eliminated = eliminated; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public String getFrame() { return frame; }
+    public void setFrame(String frame) { this.frame = frame; }
+    public String getBanner() { return banner; }
+    public void setBanner(String banner) { this.banner = banner; }
 }

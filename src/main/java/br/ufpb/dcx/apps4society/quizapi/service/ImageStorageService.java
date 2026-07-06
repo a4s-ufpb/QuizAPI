@@ -41,6 +41,10 @@ public class ImageStorageService {
      * Converte imagens novas para webp antes de subir (mais leve pra web).
      */
     public String upload(String imageBase64OrUrl) {
+        return upload(imageBase64OrUrl, OBJECT_PREFIX);
+    }
+
+    public String upload(String imageBase64OrUrl, String prefix) {
         if (imageBase64OrUrl == null || imageBase64OrUrl.isBlank()) {
             return null;
         }
@@ -49,7 +53,7 @@ public class ImageStorageService {
         }
 
         byte[] webpBytes = toWebp(imageBase64OrUrl);
-        String objectKey = OBJECT_PREFIX + UUID.randomUUID() + ".webp";
+        String objectKey = prefix + UUID.randomUUID() + ".webp";
 
         try (ByteArrayInputStream input = new ByteArrayInputStream(webpBytes)) {
             minioClient.putObject(PutObjectArgs.builder()

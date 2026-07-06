@@ -5,8 +5,10 @@ import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
 import br.ufpb.dcx.apps4society.quizapi.game.dto.*;
 import br.ufpb.dcx.apps4society.quizapi.game.model.*;
+import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.QuestionRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
+import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -43,13 +45,16 @@ public class GameRoomService {
 
     private final QuestionRepository questionRepository;
     private final ThemeRepository themeRepository;
+    private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     public GameRoomService(QuestionRepository questionRepository,
                            ThemeRepository themeRepository,
+                           UserRepository userRepository,
                            SimpMessagingTemplate messagingTemplate) {
         this.questionRepository = questionRepository;
         this.themeRepository = themeRepository;
+        this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
         this.scheduler.scheduleAtFixedRate(this::sweepIdleRooms,
                 ROOM_SWEEP_INTERVAL_MINUTES, ROOM_SWEEP_INTERVAL_MINUTES, TimeUnit.MINUTES);
@@ -87,11 +92,38 @@ public class GameRoomService {
             sendError(code, "A partida já começou.");
             return;
         }
+        boolean isNew = !room.getPlayers().containsKey(playerId);
+        // Capacidade máxima não conta o host (ele não pontua). Só barra novos
+        // jogadores; quem já está na sala (reconexão) sempre passa.
+        if (isNew && countNonHostPlayers(room) >= room.getConfig().maxPlayers()) {
+            sendError(code, "A sala está cheia.");
+            return;
+        }
         GamePlayer player = room.getPlayers().computeIfAbsent(playerId,
                 id -> new GamePlayer(id, safeName(name, "Jogador"), false));
         if (avatar != null) player.setAvatar(avatar);
-        if (userUuid != null) player.setUserUuid(userUuid);
+        if (userUuid != null) {
+            player.setUserUuid(userUuid);
+            applyCosmetics(player, userUuid);
+        }
         broadcastState(room);
+    }
+
+    private int countNonHostPlayers(GameRoom room) {
+        return (int) room.getPlayers().values().stream().filter(p -> !p.isHost()).count();
+    }
+
+    /** Copia os cosméticos equipados da conta real pro jogador da sala (só visual). */
+    private void applyCosmetics(GamePlayer player, String userUuid) {
+        try {
+            User user = userRepository.findById(UUID.fromString(userUuid)).orElse(null);
+            if (user == null) return;
+            player.setTitle(user.getEquippedTitle());
+            player.setFrame(user.getEquippedFrame());
+            player.setBanner(user.getEquippedBanner());
+        } catch (IllegalArgumentException ignored) {
+            // userUuid não é um UUID válido (ex.: convidado) — sem cosméticos.
+        }
     }
 
     public synchronized void leave(String code, String playerId) {
@@ -304,6 +336,7 @@ public class GameRoomService {
         GamePlayer player = room.getPlayers().get(playerId);
         if (player == null || player.isAnsweredCurrent()) return;
         if (room.getConfig().roomMode() == RoomMode.TEAM && !player.isCaptain()) return;
+        if (player.isEliminated()) return;
 
         player.setAnsweredCurrent(true);
         player.setCurrentAnswerId(alternativeId);
@@ -369,7 +402,7 @@ public class GameRoomService {
             alternatives = hideOneWrongAlternative(question, alternatives);
         }
 
-        int time = room.getConfig().questionTimeSeconds();
+        int time = effectiveQuestionTime(room, index);
         QuestionView view = new QuestionView(
                 question.getId(), question.getTitle(), question.getImageUrl(),
                 question.getImageOneUrl(), question.getImageTwoUrl(),
@@ -382,6 +415,17 @@ public class GameRoomService {
 
         room.setTimerTask(scheduler.schedule(() -> endQuestionSafely(room.getCode(), index),
                 time, TimeUnit.SECONDS));
+    }
+
+    // Modo Relâmpago: 5s a menos por questão (nunca abaixo de 5s no total).
+    private static final int LIGHTNING_TIME_STEP_SECONDS = 5;
+    private static final int LIGHTNING_MIN_TIME_SECONDS = 5;
+
+    private int effectiveQuestionTime(GameRoom room, int index) {
+        int base = room.getConfig().questionTimeSeconds();
+        if (room.getConfig().gameStyle() != GameStyle.LIGHTNING) return base;
+        int reduced = base - (index * LIGHTNING_TIME_STEP_SECONDS);
+        return Math.max(LIGHTNING_MIN_TIME_SECONDS, reduced);
     }
 
     /** Remove (determinístico, sempre a mesma) uma alternativa incorreta da lista enviada aos jogadores. */
@@ -420,8 +464,12 @@ public class GameRoomService {
         if (room.getCurrentPowerUp() == QuestionPower.STEAL_POINTS) {
             applyStealPoints(room, correctId);
         }
+        if (room.getConfig().gameStyle() == GameStyle.SURVIVAL) {
+            applySurvivalElimination(room, correctId);
+        }
 
-        boolean last = room.getCurrentIndex() >= room.getQuestions().size() - 1;
+        boolean last = room.getCurrentIndex() >= room.getQuestions().size() - 1
+                || room.survivalShouldEndEarly();
         QuestionResultView result = new QuestionResultView(
                 correctId, room.getCurrentIndex(), room.getQuestions().size(), last,
                 scoreboard(room), teamScoreboard(room), playerAnswers(room, correctId));
@@ -447,12 +495,34 @@ public class GameRoomService {
     private void advance(GameRoom room) {
         room.cancelTimer();
         int next = room.getCurrentIndex() + 1;
-        if (next >= room.getQuestions().size()) {
+        if (next >= room.getQuestions().size() || room.survivalShouldEndEarly()) {
             room.setStatus(RoomStatus.FINISHED);
             broadcastState(room);
             return;
         }
         startQuestion(room, next);
+    }
+
+    /**
+     * Modo Sobrevivência: quem errou (ou não respondeu) essa questão é
+     * eliminado. Se todos os ativos errassem ao mesmo tempo ninguém sobraria
+     * pra próxima rodada — nesse caso ninguém é eliminado (rodada "de graça").
+     */
+    private void applySurvivalElimination(GameRoom room, Long correctId) {
+        boolean soloHost = room.getPlayers().size() == 1;
+        List<GamePlayer> active = room.getPlayers().values().stream()
+                .filter(p -> !p.isHost() || soloHost)
+                .filter(p -> !p.isEliminated())
+                .toList();
+
+        boolean anySurvivor = correctId != null && active.stream()
+                .anyMatch(p -> correctId.equals(p.getCurrentAnswerId()));
+        if (!anySurvivor) return;
+
+        for (GamePlayer p : active) {
+            boolean correct = correctId != null && correctId.equals(p.getCurrentAnswerId());
+            if (!correct) p.setEliminated(true);
+        }
     }
 
     private int computeScore(GameRoom room, Long alternativeId) {
@@ -466,7 +536,7 @@ public class GameRoomService {
             base = SCORE_MAX;
         } else {
             long elapsed = System.currentTimeMillis() - room.getQuestionStartMillis();
-            double total = room.getConfig().questionTimeSeconds() * 1000.0;
+            double total = effectiveQuestionTime(room, room.getCurrentIndex()) * 1000.0;
             double fraction = Math.max(0, Math.min(1, elapsed / total));
             base = (int) Math.round(SCORE_MAX - (SCORE_MAX - SCORE_MIN_CORRECT) * fraction);
         }
@@ -539,7 +609,8 @@ public class GameRoomService {
     private RoomStateResponse toState(GameRoom room) {
         List<RoomStateResponse.PlayerView> players = room.getPlayers().values().stream()
                 .map(p -> new RoomStateResponse.PlayerView(
-                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid()))
+                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid(), p.isEliminated(),
+                        p.getTitle(), p.getFrame(), p.getBanner()))
                 .toList();
         return new RoomStateResponse(
                 room.getCode(), room.getHostId(), room.getThemeId(), room.getThemeName(), room.getThemeImageUrl(),
@@ -553,7 +624,8 @@ public class GameRoomService {
                 .filter(p -> !p.isHost() || room.getPlayers().size() == 1)
                 .sorted(Comparator.comparingInt(GamePlayer::getScore).reversed())
                 .map(p -> new RoomStateResponse.PlayerView(
-                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid()))
+                        p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid(), p.isEliminated(),
+                        p.getTitle(), p.getFrame(), p.getBanner()))
                 .toList();
     }
 

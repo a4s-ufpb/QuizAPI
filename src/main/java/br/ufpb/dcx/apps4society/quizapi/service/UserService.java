@@ -197,6 +197,25 @@ public class UserService {
                 .toList();
     }
 
+    public User findUserEntityById(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(Messages.USER_NOT_FOUND));
+    }
+
+    /**
+     * Resolve o papel do portador do token, ou {@code null} se não houver token
+     * válido (convidado). Usado por endpoints públicos que aplicam regras
+     * diferentes por papel (ex.: capacidade de sala/torneio).
+     */
+    public Role resolveRoleOrGuest(String token) {
+        if (token == null || token.isBlank()) return null;
+        try {
+            return findUserByToken(token).getRole();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     public AdminResponse validateIfUserIsAdmin(String token, UUID id) throws UserNotHavePermissionException {
         User loggedUser = findUserByToken(token);
 

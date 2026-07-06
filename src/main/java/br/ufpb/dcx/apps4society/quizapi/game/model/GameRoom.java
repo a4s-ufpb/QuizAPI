@@ -71,7 +71,19 @@ public class GameRoom {
         }
         return players.values().stream()
                 .filter(p -> !p.isHost() || players.size() == 1)
+                .filter(p -> !p.isEliminated())
                 .allMatch(GamePlayer::isAnsweredCurrent);
+    }
+
+    /** Sobrevivência: só termina cedo quando restar no máximo 1 jogador de pé (evita ficar travado esperando). */
+    public boolean survivalShouldEndEarly() {
+        if (config.gameStyle() != GameStyle.SURVIVAL) return false;
+        boolean soloHost = players.size() == 1;
+        long remaining = players.values().stream()
+                .filter(p -> !p.isHost() || soloHost)
+                .filter(p -> !p.isEliminated())
+                .count();
+        return remaining <= 1;
     }
 
     public boolean allPlayersReady() {
