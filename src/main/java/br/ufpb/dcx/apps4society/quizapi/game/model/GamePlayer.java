@@ -26,6 +26,8 @@ public class GamePlayer {
     private String title;
     private String frame;
     private String banner;
+    /** Nº de questões que o jogador acertou na partida (para XP/moedas/histórico). */
+    private int correctCount;
 
     public GamePlayer(String id, String name, boolean host) {
         this.id = id;
@@ -46,6 +48,7 @@ public class GamePlayer {
         this.answeredCurrent = false;
         this.currentAnswerId = null;
         this.eliminated = false;
+        this.correctCount = 0;
     }
 
     public String getId() { return id; }
@@ -80,4 +83,6 @@ public class GamePlayer {
     public void setFrame(String frame) { this.frame = frame; }
     public String getBanner() { return banner; }
     public void setBanner(String banner) { this.banner = banner; }
+    public int getCorrectCount() { return correctCount; }
+    public void incrementCorrectCount() { this.correctCount++; }
 }

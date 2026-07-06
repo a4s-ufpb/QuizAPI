@@ -16,10 +16,9 @@ public class MatchHistoryService {
     // XP ganho: 10 por acerto + bônus de 20 se a partida foi 100% de acerto.
     private static final int XP_PER_HIT = 10;
     private static final int PERFECT_BONUS = 20;
-    // Moedas (gastáveis na loja): valor menor que o XP pra manter itens cosméticos
-    // como uma meta de médio prazo, não algo comprável em 1-2 partidas.
-    private static final int COINS_PER_HIT = 5;
-    private static final int PERFECT_COIN_BONUS = 30;
+    // Moedas (gastáveis na loja): 30 por acerto + bônus de 50 se gabaritar.
+    private static final int COINS_PER_HIT = 30;
+    private static final int PERFECT_COIN_BONUS = 50;
 
     private final MatchHistoryRepository matchHistoryRepository;
     private final UserRepository userRepository;

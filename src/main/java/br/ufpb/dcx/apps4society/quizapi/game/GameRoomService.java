@@ -461,6 +461,14 @@ public class GameRoomService {
                 .map(Alternative::getId)
                 .findFirst().orElse(null);
 
+        // Conta acertos por jogador (base de XP/moedas/histórico) — independente
+        // da pontuação por velocidade.
+        if (correctId != null) {
+            room.getPlayers().values().forEach(p -> {
+                if (correctId.equals(p.getCurrentAnswerId())) p.incrementCorrectCount();
+            });
+        }
+
         if (room.getCurrentPowerUp() == QuestionPower.STEAL_POINTS) {
             applyStealPoints(room, correctId);
         }
@@ -610,7 +618,7 @@ public class GameRoomService {
         List<RoomStateResponse.PlayerView> players = room.getPlayers().values().stream()
                 .map(p -> new RoomStateResponse.PlayerView(
                         p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid(), p.isEliminated(),
-                        p.getTitle(), p.getFrame(), p.getBanner()))
+                        p.getTitle(), p.getFrame(), p.getBanner(), p.getCorrectCount()))
                 .toList();
         return new RoomStateResponse(
                 room.getCode(), room.getHostId(), room.getThemeId(), room.getThemeName(), room.getThemeImageUrl(),
@@ -625,7 +633,7 @@ public class GameRoomService {
                 .sorted(Comparator.comparingInt(GamePlayer::getScore).reversed())
                 .map(p -> new RoomStateResponse.PlayerView(
                         p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid(), p.isEliminated(),
-                        p.getTitle(), p.getFrame(), p.getBanner()))
+                        p.getTitle(), p.getFrame(), p.getBanner(), p.getCorrectCount()))
                 .toList();
     }
 

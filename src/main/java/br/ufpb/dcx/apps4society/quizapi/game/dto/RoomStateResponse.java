@@ -30,7 +30,8 @@ public record RoomStateResponse(
             boolean eliminated,
             String title,
             String frame,
-            String banner
+            String banner,
+            int correctCount
     ) {}
 
     public record TeamView(String id, String name, int score, String avatar, String captainId) {}
