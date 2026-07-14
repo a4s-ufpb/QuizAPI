@@ -52,6 +52,43 @@ class ThemeControllerTest extends QuizApplicationTests {
     }
 
     @Test
+    void insertThemeWithDescriptionAndMaterials_shouldPersistTest() {
+        UserRequest userRequest = mockUser.mockRequest(1);
+        UserResponse userResponse = UserRequestUtil.post(userRequest);
+        String token = UserRequestUtil.login(mockUser.mockUserLogin());
+
+        java.util.Map<String, Object> body = java.util.Map.of(
+                "name", "Tema com material",
+                "imageUrl", "http://imagem.com",
+                "description", "Conteúdos: frações e porcentagem",
+                "materials", java.util.List.of(
+                        java.util.Map.of("name", "Aula 1", "link", "https://youtu.be/abc", "type", "VIDEO"),
+                        java.util.Map.of("name", "PDF", "link", "https://x.com/a.pdf", "type", "FILE")
+                )
+        );
+
+        ThemeResponse themeResponse = given()
+                .header("Authorization", "Bearer " + token)
+                .contentType(ContentType.JSON)
+                .body(body)
+                .when()
+                .post(baseURI + ":" + port + basePath + BASE_PATH_THEME)
+                .then()
+                .statusCode(201)
+                .body("description", org.hamcrest.Matchers.equalTo("Conteúdos: frações e porcentagem"))
+                .body("materials.size()", org.hamcrest.Matchers.equalTo(2))
+                .body("materials[0].type", org.hamcrest.Matchers.equalTo("VIDEO"))
+                .extract()
+                .as(ThemeResponse.class);
+
+        assertNotNull(themeResponse.materials());
+        assertEquals(2, themeResponse.materials().size());
+
+        ThemeRequestUtil.delete(themeResponse.id(), token);
+        UserRequestUtil.delete(userResponse);
+    }
+
+    @Test
     void insertThemeByNameInvalid_shouldReturn400Test() {
         UserRequest userRequest = mockUser.mockRequest(1);
         UserResponse userResponse = UserRequestUtil.post(userRequest);

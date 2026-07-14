@@ -1,8 +1,10 @@
 package br.ufpb.dcx.apps4society.quizapi.service;
 
+import br.ufpb.dcx.apps4society.quizapi.dto.theme.MaterialRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeUpdate;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeResponse;
+import br.ufpb.dcx.apps4society.quizapi.entity.Material;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
@@ -18,6 +20,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class ThemeService {
@@ -47,11 +51,20 @@ public class ThemeService {
         validateImage(themeRequest.imageUrl());
         String imageUrl = imageStorageService.upload(themeRequest.imageUrl(), THEME_IMAGE_PREFIX);
 
-        Theme saveTheme = new Theme(themeRequest.name(), imageUrl, user);
+        Theme saveTheme = new Theme(themeRequest.name(), imageUrl, themeRequest.description(), user);
+        applyMaterials(saveTheme, themeRequest.materialsOrEmpty());
         user.addTheme(saveTheme);
 
         repository.save(saveTheme);
         return saveTheme.entityToResponse();
+    }
+
+    /** Substitui os materiais do tema pelos informados na requisição. */
+    private void applyMaterials(Theme theme, List<MaterialRequest> materials) {
+        List<Material> mapped = materials.stream()
+                .map(m -> new Material(m.name(), m.link(), m.type(), theme))
+                .toList();
+        theme.replaceMaterials(mapped);
     }
 
     // URL já armazenada (edição sem trocar a imagem) não conta pro limite —
@@ -152,5 +165,7 @@ public class ThemeService {
     private void updateData(Theme theme, ThemeUpdate themeUpdate, String imageUrl){
         theme.setName(themeUpdate.name());
         theme.setImageUrl(imageUrl);
+        theme.setDescription(themeUpdate.description());
+        applyMaterials(theme, themeUpdate.materialsOrEmpty());
     }
 }

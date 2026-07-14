@@ -1,7 +1,10 @@
 package br.ufpb.dcx.apps4society.quizapi.dto.theme;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 public record ThemeUpdate(
         @NotBlank(message = "Campo tema não pode ser vazio")
@@ -9,5 +12,19 @@ public record ThemeUpdate(
         String name,
         // Aceita tanto uma URL já hospedada quanto uma imagem em base64
         // (upload novo, convertido pra webp e enviado ao MinIO no service).
-        String imageUrl) {
+        String imageUrl,
+        /** Conteúdos abordados pelo tema (texto livre, opcional). */
+        String description,
+        /** Materiais de apoio (substituem os existentes ao salvar). */
+        @Valid
+        List<MaterialRequest> materials) {
+
+    // Compat: atualização simples só com nome + imagem.
+    public ThemeUpdate(String name, String imageUrl) {
+        this(name, imageUrl, null, List.of());
+    }
+
+    public List<MaterialRequest> materialsOrEmpty() {
+        return materials != null ? materials : List.of();
+    }
 }

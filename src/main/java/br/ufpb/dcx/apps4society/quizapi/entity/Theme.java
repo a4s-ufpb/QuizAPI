@@ -18,6 +18,9 @@ public class Theme implements Serializable {
     private Long id;
     private String name;
     private String imageUrl;
+    /** Texto livre com os conteúdos abordados pelo tema. */
+    @Column(columnDefinition = "TEXT")
+    private String description;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private User creator;
     // LAZY: listar temas não precisa carregar todas as questões (com base64
@@ -26,6 +29,10 @@ public class Theme implements Serializable {
     private List<Question> questions = new ArrayList<>();
     @OneToMany(mappedBy = "theme", cascade = CascadeType.REMOVE)
     private List<Score> ranking = new ArrayList<>();
+    // Materiais de apoio (poucos por tema): EAGER + cascade total para serem
+    // salvos/removidos junto do tema e disponíveis ao montar a resposta.
+    @OneToMany(mappedBy = "theme", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Material> materials = new ArrayList<>();
 
     public Theme(){
 
@@ -37,6 +44,13 @@ public class Theme implements Serializable {
         this.imageUrl = imageUrl;
     }
 
+    public Theme(String name, String imageUrl, String description, User creator) {
+        this.name = name;
+        this.imageUrl = imageUrl;
+        this.description = description;
+        this.creator = creator;
+    }
+
     public Theme(Long id, String name, User creator) {
         this.id = id;
         this.name = name;
@@ -44,7 +58,8 @@ public class Theme implements Serializable {
     }
 
     public ThemeResponse entityToResponse(){
-        return new ThemeResponse(id, name, imageUrl);
+        return new ThemeResponse(id, name, imageUrl, description,
+                materials.stream().map(Material::entityToResponse).toList());
     }
 
     public void addQuestion(Question question){
@@ -90,5 +105,30 @@ public class Theme implements Serializable {
 
     public User getCreator() {
         return creator;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public List<Material> getMaterials() {
+        return materials;
+    }
+
+    /** Substitui todos os materiais do tema mantendo o vínculo bidirecional. */
+    public void replaceMaterials(List<Material> newMaterials) {
+        this.materials.clear();
+        if (newMaterials != null) {
+            newMaterials.forEach(this::addMaterial);
+        }
+    }
+
+    public void addMaterial(Material material) {
+        material.setTheme(this);
+        this.materials.add(material);
     }
 }
