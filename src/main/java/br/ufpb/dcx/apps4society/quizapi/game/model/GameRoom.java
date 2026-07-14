@@ -2,6 +2,7 @@ package br.ufpb.dcx.apps4society.quizapi.game.model;
 
 import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.game.dto.GameConfig;
+import br.ufpb.dcx.apps4society.quizapi.game.dto.QuestionResultView;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,6 +41,12 @@ public class GameRoom {
     private QuestionPower pendingPowerUp;
     /** Poder que está valendo pra questão atual (aplicado no start dela). */
     private QuestionPower currentPowerUp;
+
+    /** Último RESULT enviado (status BETWEEN) — reaproveitado quando o líder pula a próxima questão. */
+    private QuestionResultView lastResult;
+
+    /** Quantas questões o líder pulou desde o último resultado (zerado a cada questão). */
+    private int skippedCount;
 
     public GameRoom(String code, String hostId, GameConfig config) {
         this.code = code;
@@ -124,4 +131,8 @@ public class GameRoom {
     public void setPendingPowerUp(QuestionPower pendingPowerUp) { this.pendingPowerUp = pendingPowerUp; }
     public QuestionPower getCurrentPowerUp() { return currentPowerUp; }
     public void setCurrentPowerUp(QuestionPower currentPowerUp) { this.currentPowerUp = currentPowerUp; }
+    public QuestionResultView getLastResult() { return lastResult; }
+    public void setLastResult(QuestionResultView lastResult) { this.lastResult = lastResult; }
+    public int getSkippedCount() { return skippedCount; }
+    public void setSkippedCount(int skippedCount) { this.skippedCount = skippedCount; }
 }

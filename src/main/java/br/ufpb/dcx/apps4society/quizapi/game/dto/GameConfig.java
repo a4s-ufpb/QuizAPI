@@ -45,7 +45,9 @@ public record GameConfig(
         return new GameConfig(
                 roomMode != null ? roomMode : d.roomMode(),
                 scoringMode != null ? scoringMode : d.scoringMode(),
-                advanceMode != null ? advanceMode : d.advanceMode(),
+                // Avanço automático foi descontinuado: partidas multiplayer são
+                // sempre avançadas manualmente pelo líder.
+                AdvanceMode.HOST,
                 time,
                 count,
                 maxPerTeam,

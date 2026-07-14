@@ -64,6 +64,30 @@ public interface StatisticRepository extends JpaRepository<StatisticPerConclusio
             @Param("studentName") String studentName
     );
 
+    // Estatísticas do criador com todos os filtros opcionais numa única query
+    @Query("SELECT s FROM tb_statistic s WHERE s.creatorId = :creatorId " +
+            "AND (:studentName = '' OR s.studentName = :studentName) " +
+            "AND (:themeName = '' OR s.themeName = :themeName) " +
+            "AND (:startDate IS NULL OR s.date >= :startDate) " +
+            "AND (:endDate IS NULL OR s.date <= :endDate)")
+    Page<StatisticPerConclusion> findByCreatorIdAndFilters(Pageable pageable,
+                                                           @Param("creatorId") UUID creatorId,
+                                                           @Param("studentName") String studentName,
+                                                           @Param("themeName") String themeName,
+                                                           @Param("startDate") LocalDate startDate,
+                                                           @Param("endDate") LocalDate endDate);
+
+    // Mesma busca sem restrição de criador — usada pelo ADMIN, que enxerga todas as estatísticas
+    @Query("SELECT s FROM tb_statistic s WHERE (:studentName = '' OR s.studentName = :studentName) " +
+            "AND (:themeName = '' OR s.themeName = :themeName) " +
+            "AND (:startDate IS NULL OR s.date >= :startDate) " +
+            "AND (:endDate IS NULL OR s.date <= :endDate)")
+    Page<StatisticPerConclusion> findByFiltersForAdmin(Pageable pageable,
+                                                       @Param("studentName") String studentName,
+                                                       @Param("themeName") String themeName,
+                                                       @Param("startDate") LocalDate startDate,
+                                                       @Param("endDate") LocalDate endDate);
+
     // Total de quizzes concluídos pelo próprio usuário (como aluno), com filtros opcionais
     @Query("SELECT COUNT(s) FROM tb_statistic s WHERE s.studentName = :studentName " +
             "AND (:themeName = '' OR s.themeName = :themeName) " +

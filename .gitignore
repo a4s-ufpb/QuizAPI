@@ -35,3 +35,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Teste de carga ###
+loadtest/node_modules/
+loadtest/package-lock.json

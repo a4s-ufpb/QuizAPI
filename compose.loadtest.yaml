@@ -1,0 +1,9 @@
+# Override para teste de carga: limita a API a 2 vCPUs e 2.5 GB de RAM.
+# Uso: docker compose -f docker-compose.yaml -f compose.loadtest.yaml up -d --build db minio quiz-api
+services:
+  quiz-api:
+    cpus: 2
+    mem_limit: 2560m
+    environment:
+      # Heap dimensionado pro limite do container (deixa folga pra metaspace/threads).
+      JAVA_TOOL_OPTIONS: "-Xmx1792m -Xms512m"

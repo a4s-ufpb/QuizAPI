@@ -15,7 +15,15 @@ public record RoomStateResponse(
         List<TeamView> teams,
         int currentQuestionIndex,
         int totalQuestions,
-        String pendingPowerUp
+        String pendingPowerUp,
+        /**
+         * Prévia da próxima questão (só quando status == BETWEEN e há próxima).
+         * Serve ao líder para pré-visualizar/decidir pular; os jogadores não a
+         * exibem — a questão só aparece quando o líder confirma "Próxima".
+         */
+        NextQuestionPreview nextQuestion,
+        /** Quantas questões o líder já pulou desde o último resultado (aviso aos jogadores). */
+        int skippedCount
 ) {
     public record PlayerView(
             String id,
@@ -35,4 +43,17 @@ public record RoomStateResponse(
     ) {}
 
     public record TeamView(String id, String name, int score, String avatar, String captainId) {}
+
+    /** Prévia completa da próxima questão (só o líder renderiza). */
+    public record NextQuestionPreview(
+            Long id,
+            String title,
+            String imageUrl,
+            String imageOneUrl,
+            String imageTwoUrl,
+            String imagesOrder,
+            List<AlternativePreview> alternatives
+    ) {
+        public record AlternativePreview(Long id, String text) {}
+    }
 }

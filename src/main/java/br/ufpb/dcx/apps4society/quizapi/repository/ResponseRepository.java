@@ -42,6 +42,34 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
     Page<Response> findByQuestionCreatorAndGameMode(Pageable pageable, User creator, GameMode gameMode);
     List<Response> findByQuestionCreatorUuid(UUID creatorId);
 
+    // Painel de respostas do criador: todos os filtros opcionais numa única query
+    @Query("SELECT r FROM tb_response r WHERE r.gameMode = :gameMode " +
+            "AND r.question.creator.uuid = :creatorUuid " +
+            "AND (:name = '' OR r.user.name = :name) " +
+            "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
+            "AND (:currentDate IS NULL OR r.dateTime >= :currentDate) " +
+            "AND (:finalDate IS NULL OR r.dateTime <= :finalDate)")
+    Page<Response> findByCreatorAndFilters(Pageable pageable,
+                                           @Param("creatorUuid") UUID creatorUuid,
+                                           @Param("name") String name,
+                                           @Param("themeName") String themeName,
+                                           @Param("currentDate") LocalDate currentDate,
+                                           @Param("finalDate") LocalDate finalDate,
+                                           @Param("gameMode") GameMode gameMode);
+
+    // Mesma busca sem restrição de criador — usada pelo ADMIN, que enxerga todas as respostas
+    @Query("SELECT r FROM tb_response r WHERE r.gameMode = :gameMode " +
+            "AND (:name = '' OR r.user.name = :name) " +
+            "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
+            "AND (:currentDate IS NULL OR r.dateTime >= :currentDate) " +
+            "AND (:finalDate IS NULL OR r.dateTime <= :finalDate)")
+    Page<Response> findByFiltersForAdmin(Pageable pageable,
+                                         @Param("name") String name,
+                                         @Param("themeName") String themeName,
+                                         @Param("currentDate") LocalDate currentDate,
+                                         @Param("finalDate") LocalDate finalDate,
+                                         @Param("gameMode") GameMode gameMode);
+
     // Busca por intervalo de datas
     @Query(nativeQuery = true, value = """
             SELECT r.* FROM tb_response r

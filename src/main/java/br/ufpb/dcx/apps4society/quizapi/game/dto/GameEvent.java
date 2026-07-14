@@ -19,6 +19,17 @@ public record GameEvent(String type, Object data) {
     public static GameEvent result(Object data) { return new GameEvent(RESULT, data); }
     public static GameEvent chat(Object data) { return new GameEvent(CHAT, data); }
     public static GameEvent error(String message) { return new GameEvent(ERROR, message); }
+    /**
+     * Erro direcionado a um único jogador. O tópico é compartilhado por toda a
+     * sala, então o cliente só exibe o alerta se {@code targetPlayerId} for o
+     * seu próprio id (evita, ex., todo mundo ver "A partida já começou" quando
+     * um celular reconecta no meio do jogo).
+     */
+    public static GameEvent errorFor(String targetPlayerId, String message) {
+        return new GameEvent(ERROR, new TargetedError(message, targetPlayerId));
+    }
     public static GameEvent countdown(int seconds) { return new GameEvent(COUNTDOWN, seconds); }
     public static GameEvent roomClosed(String code) { return new GameEvent(ROOM_CLOSED, code); }
+
+    public record TargetedError(String message, String targetPlayerId) {}
 }

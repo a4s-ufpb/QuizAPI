@@ -1,0 +1,13 @@
+{
+  "name": "quiz-a4s-loadtest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Teste de carga do modo multiplayer do Quiz A4S (STOMP/WebSocket)",
+  "scripts": {
+    "loadtest": "node loadtest.js"
+  },
+  "dependencies": {
+    "@stomp/stompjs": "^7.0.0",
+    "ws": "^8.0.0"
+  }
+}

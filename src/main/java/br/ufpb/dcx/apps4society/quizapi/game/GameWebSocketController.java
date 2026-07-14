@@ -97,4 +97,9 @@ public class GameWebSocketController {
     public void next(HostAction msg) {
         gameRoomService.next(msg.code(), msg.hostId());
     }
+
+    @MessageMapping("/game/skip")
+    public void skip(HostAction msg) {
+        gameRoomService.skipNextQuestion(msg.code(), msg.hostId());
+    }
 }

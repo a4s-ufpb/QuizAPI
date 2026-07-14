@@ -8,6 +8,7 @@ import br.ufpb.dcx.apps4society.quizapi.dto.response.Usernames;
 import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.Role;
 import br.ufpb.dcx.apps4society.quizapi.repository.AlternativeRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.QuestionRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.StatisticRepository;
@@ -147,35 +148,12 @@ public class ResponseService {
     public Page<ResponseDTO> findResponsesByUserNameOrDateOrThemeName(Pageable pageable, String token, String name, String themeName,
                                                                       LocalDate currentDate, LocalDate finalDate, GameMode gameMode) {
         User loggedUser = findUserByToken(token);
-        UUID creatorUuid = loggedUser.getUuid();
-        String gameModeName = gameMode.name();
-        Page<Response> responses;
 
-        if (!name.isBlank() && currentDate == null && finalDate == null && themeName.isBlank()) {
-            // Busca apenas pelo nome de usuário
-            responses = responseRepository.findByQuestionCreatorAndUserName(pageable, creatorUuid, name, gameModeName);
-        } else if (name.isBlank() && currentDate != null && finalDate != null && themeName.isBlank()) {
-            // Busca apenas pelo intervalo de datas
-            responses = responseRepository.findByDateTime(pageable, creatorUuid, currentDate, finalDate, gameModeName);
-        } else if (!name.isBlank() && currentDate != null && finalDate != null && themeName.isBlank()) {
-            // Busca pelo intervalo de datas e nome de usuário
-            responses = responseRepository.findByDateTimeAndUserName(pageable, creatorUuid, name, currentDate, finalDate, gameModeName);
-        } else if (name.isBlank() && currentDate == null && finalDate == null && !themeName.isBlank()) {
-            // Busca apenas pelo nome do tema
-            responses = responseRepository.findByQuestionCreatorAndThemeName(pageable, creatorUuid, themeName, gameModeName);
-        } else if (!name.isBlank() && !themeName.isBlank() && currentDate == null && finalDate == null) {
-            // Busca pelo nome de usuário e nome do tema
-            responses = responseRepository.findByQuestionCreatorUserNameAndThemeName(pageable, creatorUuid, name, themeName, gameModeName);
-        } else if (name.isBlank() && !themeName.isBlank() && currentDate != null && finalDate != null) {
-            // Busca pelo intervalo de datas e nome do tema
-            responses = responseRepository.findByDateTimeAndThemeName(pageable, creatorUuid, themeName, currentDate, finalDate, gameModeName);
-        } else if (!name.isBlank() && !themeName.isBlank() && currentDate != null && finalDate != null) {
-            // Busca pelo intervalo de datas, nome de usuário e nome do tema
-            responses = responseRepository.findByDateTimeAndUserNameAndThemeName(pageable, creatorUuid, name, themeName, currentDate, finalDate, gameModeName);
-        } else {
-            // Busca apenas pelo criador (caso nenhum filtro específico seja preenchido)
-            responses = responseRepository.findByQuestionCreatorAndGameMode(pageable, loggedUser, gameMode);
-        }
+        // ADMIN enxerga as respostas de todas as questões (igual à tela de
+        // estatísticas por questão); os demais só as das próprias questões.
+        Page<Response> responses = loggedUser.getRole() == Role.ADMIN
+                ? responseRepository.findByFiltersForAdmin(pageable, name, themeName, currentDate, finalDate, gameMode)
+                : responseRepository.findByCreatorAndFilters(pageable, loggedUser.getUuid(), name, themeName, currentDate, finalDate, gameMode);
 
         if (responses.isEmpty()) {
             throw new ResponseNotFoundException("Nenhuma resposta cadastrada!");
@@ -219,13 +197,17 @@ public class ResponseService {
     }
 
     public List<Usernames> findUsernamesByCreator(UUID creatorId) {
-        userRepository.findById(creatorId)
+        User creator = userRepository.findById(creatorId)
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado!"));
 
         Set<Usernames> usernames = new HashSet<>();
 
-        return responseRepository
-                .findByQuestionCreatorUuid(creatorId)
+        // ADMIN vê os usuários de todas as respostas, não só das próprias questões.
+        List<Response> source = creator.getRole() == Role.ADMIN
+                ? responseRepository.findAll()
+                : responseRepository.findByQuestionCreatorUuid(creatorId);
+
+        return source
                 .stream()
                 .map(response -> new Usernames(
                         response.getUser().getName()
@@ -236,13 +218,17 @@ public class ResponseService {
     }
 
     public List<Themes> findThemesByCreator(UUID creatorId) {
-        userRepository.findById(creatorId)
+        User creator = userRepository.findById(creatorId)
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado!"));
 
         Set<Themes> themes = new HashSet<>();
 
-        return responseRepository
-                .findByQuestionCreatorUuid(creatorId)
+        // ADMIN vê os temas de todas as respostas, não só das próprias questões.
+        List<Response> source = creator.getRole() == Role.ADMIN
+                ? responseRepository.findAll()
+                : responseRepository.findByQuestionCreatorUuid(creatorId);
+
+        return source
                 .stream()
                 .map(response -> new Themes(
                         response.getQuestion().getTheme().getName()

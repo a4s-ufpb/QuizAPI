@@ -6,8 +6,10 @@ import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StudentName;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.ThemeName;
 import br.ufpb.dcx.apps4society.quizapi.entity.StatisticPerConclusion;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.Role;
 import br.ufpb.dcx.apps4society.quizapi.repository.StatisticRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
+import br.ufpb.dcx.apps4society.quizapi.repository.UserRepository;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,10 +22,20 @@ import java.util.*;
 public class StatisticService {
     private final StatisticRepository statisticRepository;
     private final ThemeRepository themeRepository;
+    private final UserRepository userRepository;
 
-    public StatisticService(StatisticRepository statisticRepository, ThemeRepository themeRepository) {
+    public StatisticService(StatisticRepository statisticRepository, ThemeRepository themeRepository,
+                            UserRepository userRepository) {
         this.statisticRepository = statisticRepository;
         this.themeRepository = themeRepository;
+        this.userRepository = userRepository;
+    }
+
+    /** ADMIN enxerga estatísticas (e listas de filtros) de todos os criadores. */
+    private boolean isAdmin(UUID userId) {
+        return userRepository.findById(userId)
+                .map(user -> user.getRole() == Role.ADMIN)
+                .orElse(false);
     }
 
     public StatisticResponse insertStatistic(StatisticRequest statisticRequest) {
@@ -43,37 +55,10 @@ public class StatisticService {
     }
 
     public Page<StatisticResponse> findAllStatisticsByCreator(Pageable pageable, UUID creatorId, String studentName, String themeName, LocalDate startDate, LocalDate endDate) {
-        Page<StatisticPerConclusion> statistic;
-
-        boolean hasStudentName = !studentName.isBlank();
-        boolean hasThemeName = !themeName.isBlank();
-        boolean hasDateRange = startDate != null && endDate != null;
-
-        if (hasStudentName && !hasThemeName && hasDateRange) {
-            // Buscar por creatorId, studentName e intervalo de datas
-            statistic = statisticRepository.findByCreatorIdAndStudentNameAndDateRange(pageable, creatorId, studentName, startDate, endDate);
-        } else if (!hasStudentName && hasThemeName && hasDateRange) {
-            // Buscar por creatorId, themeName e intervalo de datas
-            statistic = statisticRepository.findByCreatorIdAndThemeNameAndDateRange(pageable, creatorId, themeName, startDate, endDate);
-        } else if (hasStudentName && hasThemeName && hasDateRange) {
-            // Buscar por creatorId, themeName, studentName e intervalo de datas
-            statistic = statisticRepository.findByCreatorIdAndThemeNameAndStudentNameAndDateRange(pageable, creatorId, themeName, studentName, startDate, endDate);
-        } else if (hasStudentName && !hasThemeName) {
-            // Buscar por creatorId e studentName (sem data)
-            statistic = statisticRepository.findByCreatorIdAndStudentName(pageable, creatorId, studentName);
-        } else if (!hasStudentName && hasThemeName) {
-            // Buscar por creatorId e themeName (sem data)
-            statistic = statisticRepository.findByCreatorIdAndThemeName(pageable, creatorId, themeName);
-        } else if (hasDateRange) {
-            // Buscar por creatorId e intervalo de datas
-            statistic = statisticRepository.findByCreatorIdAndDateRange(pageable, creatorId, startDate, endDate);
-        } else if (hasStudentName && hasThemeName && !hasDateRange) {
-            // Buscar por creatorId, themeName, studentName
-            statistic = statisticRepository.findByCreatorIdAndThemeNameAndStudentName(pageable, creatorId, themeName, studentName);
-        } else {
-            // Buscar apenas por creatorId
-            statistic = statisticRepository.findByCreatorId(pageable, creatorId);
-        }
+        // ADMIN enxerga as estatísticas de todos os criadores.
+        Page<StatisticPerConclusion> statistic = isAdmin(creatorId)
+                ? statisticRepository.findByFiltersForAdmin(pageable, studentName, themeName, startDate, endDate)
+                : statisticRepository.findByCreatorIdAndFilters(pageable, creatorId, studentName, themeName, startDate, endDate);
 
         return statistic.map(StatisticPerConclusion::entityToResponse);
     }
@@ -85,8 +70,11 @@ public class StatisticService {
     public List<StudentName> findDistinctStudentNameByCreatorId(UUID creatorId) {
         Set<StudentName> seenThemesAndStudents = new HashSet<>();
 
-        return statisticRepository
-                .findByCreatorId(creatorId)
+        List<StatisticPerConclusion> source = isAdmin(creatorId)
+                ? statisticRepository.findAll()
+                : statisticRepository.findByCreatorId(creatorId);
+
+        return source
                 .stream()
                 .map(sts -> new StudentName(sts.getStudentName()))
                 .filter(seenThemesAndStudents::add)
@@ -97,8 +85,11 @@ public class StatisticService {
     public List<ThemeName> findDistinctThemeNameByCreatorId(UUID creatorId) {
         Set<ThemeName> seenThemesAndStudents = new HashSet<>();
 
-        return statisticRepository
-                .findByCreatorId(creatorId)
+        List<StatisticPerConclusion> source = isAdmin(creatorId)
+                ? statisticRepository.findAll()
+                : statisticRepository.findByCreatorId(creatorId);
+
+        return source
                 .stream()
                 .map(sts -> new ThemeName(sts.getThemeName()))
                 .filter(seenThemesAndStudents::add)

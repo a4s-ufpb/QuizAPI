@@ -88,15 +88,19 @@ public class GameRoomService {
 
     public synchronized void join(String code, String playerId, String name, String avatar, String userUuid) {
         GameRoom room = requireRoom(code);
-        if (room.getStatus() != RoomStatus.LOBBY) {
-            sendError(code, "A partida já começou.");
+        boolean isNew = !room.getPlayers().containsKey(playerId);
+        // Quem já está na sala sempre pode "re-entrar" (o cliente STOMP
+        // reconecta sozinho após queda de rede e reenvia o join) — em qualquer
+        // fase da partida, sem erro. Só jogador NOVO é barrado fora do lobby,
+        // e o erro vai direcionado só pra ele (o tópico é da sala inteira).
+        if (isNew && room.getStatus() != RoomStatus.LOBBY) {
+            sendErrorTo(code, playerId, "A partida já começou.");
             return;
         }
-        boolean isNew = !room.getPlayers().containsKey(playerId);
         // Capacidade máxima não conta o host (ele não pontua). Só barra novos
         // jogadores; quem já está na sala (reconexão) sempre passa.
         if (isNew && countNonHostPlayers(room) >= room.getConfig().maxPlayers()) {
-            sendError(code, "A sala está cheia.");
+            sendErrorTo(code, playerId, "A sala está cheia.");
             return;
         }
         GamePlayer player = room.getPlayers().computeIfAbsent(playerId,
@@ -304,10 +308,8 @@ public class GameRoomService {
             sendError(code, "Selecione um quiz antes de iniciar.");
             return;
         }
-        if (!room.allPlayersReady()) {
-            sendError(code, "Todos os jogadores precisam estar prontos.");
-            return;
-        }
+        // O líder pode iniciar mesmo sem todos prontos — o front exibe uma
+        // confirmação antes de enviar o start nesse caso.
 
         List<Question> questions = loadQuestions(room.getThemeId(), room.getConfig().questionCount());
         if (questions.isEmpty()) {
@@ -357,6 +359,27 @@ public class GameRoomService {
     }
 
     /**
+     * Líder descarta a próxima questão sem jogá-la. O índice atual anda 1
+     * posição "em seco" e apenas o STATE é reemitido (com a nova prévia da
+     * próxima questão) — o RESULT NÃO é reenviado, para não re-disparar a
+     * animação de revelação nos clientes. A questão pulada nunca é enviada como
+     * QUESTION, então os jogadores não a veem nem a respondem; ela só aparece
+     * quando o líder confirma "Próxima questão".
+     */
+    public synchronized void skipNextQuestion(String code, String hostId) {
+        GameRoom room = requireRoom(code);
+        if (!hostId.equals(room.getHostId())) return;
+        if (room.getStatus() != RoomStatus.BETWEEN) return;
+        if (room.getLastResult() == null) return;
+        // Não há próxima questão pra pular.
+        if (room.getCurrentIndex() + 1 >= room.getQuestions().size()) return;
+
+        room.setCurrentIndex(room.getCurrentIndex() + 1);
+        room.setSkippedCount(room.getSkippedCount() + 1);
+        broadcastState(room);
+    }
+
+    /**
      * Líder escolhe (ou limpa, com {@code power == null}) o poder que vai
      * valer pra próxima questão — só no modo Diversão, só entre questões.
      */
@@ -386,6 +409,7 @@ public class GameRoomService {
         room.setCurrentIndex(index);
         room.setStatus(RoomStatus.IN_QUESTION);
         room.setQuestionStartMillis(System.currentTimeMillis());
+        room.setSkippedCount(0);
         room.getPlayers().values().forEach(GamePlayer::resetForNewQuestion);
 
         // O poder armado pelo líder passa a valer pra essa questão e é
@@ -454,6 +478,7 @@ public class GameRoomService {
     private void endQuestion(GameRoom room) {
         room.cancelTimer();
         room.setStatus(RoomStatus.BETWEEN);
+        room.setSkippedCount(0);
 
         Question question = room.currentQuestion();
         Long correctId = question.getAlternatives().stream()
@@ -480,7 +505,9 @@ public class GameRoomService {
                 || room.survivalShouldEndEarly();
         QuestionResultView result = new QuestionResultView(
                 correctId, room.getCurrentIndex(), room.getQuestions().size(), last,
-                scoreboard(room), teamScoreboard(room), playerAnswers(room, correctId));
+                scoreboard(room), teamScoreboard(room), playerAnswers(room, correctId),
+                alternativeCounts(room, question), nextQuestionTitle(room, last));
+        room.setLastResult(result);
 
         messagingTemplate.convertAndSend(topic(room.getCode()), GameEvent.result(result));
         broadcastState(room);
@@ -624,7 +651,29 @@ public class GameRoomService {
                 room.getCode(), room.getHostId(), room.getThemeId(), room.getThemeName(), room.getThemeImageUrl(),
                 room.getConfig(), room.getStatus().name(), players, teamScoreboard(room),
                 room.getCurrentIndex(), room.getQuestions().size(),
-                room.getPendingPowerUp() != null ? room.getPendingPowerUp().name() : null);
+                room.getPendingPowerUp() != null ? room.getPendingPowerUp().name() : null,
+                nextQuestionPreview(room), room.getSkippedCount());
+    }
+
+    /**
+     * Prévia da próxima questão para o líder pré-visualizar/pular — só entre
+     * questões (BETWEEN) e quando ainda há próxima (não é o resultado final).
+     */
+    private RoomStateResponse.NextQuestionPreview nextQuestionPreview(GameRoom room) {
+        if (room.getStatus() != RoomStatus.BETWEEN) return null;
+        if (room.getLastResult() != null && room.getLastResult().lastQuestion()) return null;
+        int next = room.getCurrentIndex() + 1;
+        if (next < 0 || next >= room.getQuestions().size()) return null;
+
+        Question q = room.getQuestions().get(next);
+        List<RoomStateResponse.NextQuestionPreview.AlternativePreview> alternatives =
+                q.getAlternatives().stream()
+                        .map(a -> new RoomStateResponse.NextQuestionPreview.AlternativePreview(
+                                a.getId(), a.entityToResponse().text()))
+                        .toList();
+        return new RoomStateResponse.NextQuestionPreview(
+                q.getId(), q.getTitle(), q.getImageUrl(), q.getImageOneUrl(), q.getImageTwoUrl(),
+                q.getImagesOrder(), alternatives);
     }
 
     private List<RoomStateResponse.PlayerView> scoreboard(GameRoom room) {
@@ -635,6 +684,32 @@ public class GameRoomService {
                         p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid(), p.isEliminated(),
                         p.getTitle(), p.getFrame(), p.getBanner(), p.getCorrectCount()))
                 .toList();
+    }
+
+    /** Distribuição de respostas por alternativa da questão encerrada (host não conta, exceto jogando sozinho). */
+    private List<QuestionResultView.AlternativeCountView> alternativeCounts(GameRoom room, Question question) {
+        boolean soloHost = room.getPlayers().size() == 1;
+        List<GamePlayer> answering = room.getPlayers().values().stream()
+                .filter(p -> !p.isHost() || soloHost)
+                .toList();
+        // Mesma ordem enviada no QuestionView — o front usa a posição pra manter
+        // as cores das barras iguais às dos botões de alternativa.
+        return question.getAlternatives().stream()
+                .map(a -> new QuestionResultView.AlternativeCountView(
+                        a.getId(),
+                        a.entityToResponse().text(),
+                        (int) answering.stream()
+                                .filter(p -> a.getId().equals(p.getCurrentAnswerId()))
+                                .count(),
+                        Boolean.TRUE.equals(a.getCorrect())))
+                .toList();
+    }
+
+    private String nextQuestionTitle(GameRoom room, boolean last) {
+        if (last) return null;
+        int next = room.getCurrentIndex() + 1;
+        if (next >= room.getQuestions().size()) return null;
+        return room.getQuestions().get(next).getTitle();
     }
 
     private List<QuestionResultView.PlayerAnswerView> playerAnswers(GameRoom room, Long correctId) {
@@ -685,6 +760,11 @@ public class GameRoomService {
 
     private void sendError(String code, String message) {
         messagingTemplate.convertAndSend(topic(code), GameEvent.error(message));
+    }
+
+    /** Erro exibido apenas pelo jogador alvo (o tópico é compartilhado pela sala inteira). */
+    private void sendErrorTo(String code, String targetPlayerId, String message) {
+        messagingTemplate.convertAndSend(topic(code), GameEvent.errorFor(targetPlayerId, message));
     }
 
     private String topic(String code) {
