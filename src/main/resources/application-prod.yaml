@@ -7,3 +7,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+logging:
+  level:
+    root: WARN
+    br.ufpb.dcx.apps4society.quizapi: INFO
+    br.ufpb.dcx.apps4society.quizapi.security: DEBUG

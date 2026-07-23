@@ -16,6 +16,8 @@ import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
 import br.ufpb.dcx.apps4society.quizapi.util.ImageValidator;
 import br.ufpb.dcx.apps4society.quizapi.util.Messages;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +29,8 @@ import java.util.List;
 
 @Service
 public class QuestionService {
+    private static final Logger log = LoggerFactory.getLogger(QuestionService.class);
+
     private QuestionRepository questionRepository;
     private ThemeRepository themeRepository;
     private UserService userService;
@@ -61,6 +65,7 @@ public class QuestionService {
         creator.addQuestion(question);
 
         questionRepository.save(question);
+        log.info("questão criada: '{}' no tema id={} por {}", questionRequest.title(), idTheme, creator.getEmail());
         return question.entityToResponse();
     }
 
@@ -86,6 +91,7 @@ public class QuestionService {
         creator.addQuestion(question);
 
         questionRepository.save(question);
+        log.info("questão criada (multipart): '{}' no tema id={} por {}", title, idTheme, creator.getEmail());
         return question.entityToResponse();
     }
 
@@ -111,7 +117,7 @@ public class QuestionService {
         question.setImageTwoUrl(finalImageTwoUrl);
         question.setImagesOrder(imagesOrder);
         questionRepository.save(question);
-
+        log.info("questão atualizada (multipart): id={} '{}' por {}", id, title, user.getEmail());
         return question.entityToResponse();
     }
 
@@ -136,6 +142,7 @@ public class QuestionService {
 
         question.removeQuestionOfThemeList(id);
         questionRepository.delete(question);
+        log.info("questão removida: id={} '{}' por {}", id, question.getTitle(), user.getEmail());
     }
 
     public List<QuestionResponse> find10QuestionsByThemeId(Long id){
@@ -231,7 +238,7 @@ public class QuestionService {
 
         updateData(question, questionUpdate, imageOneUrl, imageTwoUrl);
         questionRepository.save(question);
-
+        log.info("questão atualizada: id={} '{}' por {}", id, questionUpdate.title(), user.getEmail());
         return question.entityToResponse();
     }
 

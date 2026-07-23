@@ -16,6 +16,8 @@ import br.ufpb.dcx.apps4society.quizapi.util.ImageValidator;
 import br.ufpb.dcx.apps4society.quizapi.util.Messages;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -28,6 +30,7 @@ import java.util.List;
 
 @Service
 public class ThemeService {
+    private static final Logger log = LoggerFactory.getLogger(ThemeService.class);
     private static final String THEME_IMAGE_PREFIX = "themes/";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -60,6 +63,7 @@ public class ThemeService {
         user.addTheme(saveTheme);
 
         repository.save(saveTheme);
+        log.info("tema criado: '{}' por {}", saveTheme.getName(), user.getEmail());
         return saveTheme.entityToResponse();
     }
 
@@ -88,6 +92,7 @@ public class ThemeService {
         applyMaterials(saveTheme, materials);
         user.addTheme(saveTheme);
         repository.save(saveTheme);
+        log.info("tema criado (multipart): '{}' por {}", name, user.getEmail());
         return saveTheme.entityToResponse();
     }
 
@@ -124,6 +129,7 @@ public class ThemeService {
         theme.setDescription(description);
         applyMaterials(theme, materials);
         repository.save(theme);
+        log.info("tema atualizado (multipart): id={} '{}' por {}", id, name, user.getEmail());
         return theme.entityToResponse();
     }
 
@@ -168,6 +174,7 @@ public class ThemeService {
         }
 
         repository.delete(theme);
+        log.info("tema removido: id={} '{}' por {}", id, theme.getName(), user.getEmail());
     }
 
     // Temas são lidos com muito mais frequência do que escritos; cacheado por
@@ -235,7 +242,7 @@ public class ThemeService {
 
         updateData(theme, themeUpdate, imageUrl);
         repository.save(theme);
-
+        log.info("tema atualizado: id={} '{}' por {}", id, themeUpdate.name(), user.getEmail());
         return theme.entityToResponse();
     }
 

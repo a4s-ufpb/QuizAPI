@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- ================================================================
+         DEV: console colorido, DEBUG no pacote da aplicação
+    ================================================================ -->
+    <springProfile name="dev">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan([%X{requestId:-system}]) %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <logger name="br.ufpb.dcx.apps4society.quizapi" level="DEBUG"/>
+        <logger name="org.springframework.security"     level="INFO"/>
+        <logger name="org.hibernate.SQL"               level="WARN"/>
+        <logger name="org.flywaydb"                    level="INFO"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ================================================================
+         PROD: log compacto com requestId e user do MDC, sem ruído de libs
+    ================================================================ -->
+    <springProfile name="prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId:-system}] [%X{user:-anon}] %logger{30} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- Pacote principal: INFO em operação normal, DEBUG só quando necessário -->
+        <logger name="br.ufpb.dcx.apps4society.quizapi"          level="INFO"/>
+        <!-- SecurityFilter logado em DEBUG para investigação de 401/403 -->
+        <logger name="br.ufpb.dcx.apps4society.quizapi.security"  level="DEBUG"/>
+
+        <!-- Silenciar libs barulhentas -->
+        <logger name="org.springframework.security"  level="WARN"/>
+        <logger name="org.springframework.web"       level="WARN"/>
+        <logger name="org.hibernate"                 level="WARN"/>
+        <logger name="com.zaxxer.hikari"             level="WARN"/>
+        <logger name="org.flywaydb"                  level="WARN"/>
+        <logger name="io.minio"                      level="WARN"/>
+
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>
