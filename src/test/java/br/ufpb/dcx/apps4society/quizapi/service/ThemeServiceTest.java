@@ -53,7 +53,7 @@ class ThemeServiceTest {
         mockTheme = new MockTheme();
         mockUser = new MockUser();
         mockQuestion = new MockQuestion();
-        lenient().when(imageStorageService.upload(any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(imageStorageService.upload(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
