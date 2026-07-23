@@ -26,6 +26,9 @@ public class GamePlayer {
     private String title;
     private String frame;
     private String banner;
+    private String font;
+    private String nameStyle;
+    private String nameEffect;
     /** Nº de questões que o jogador acertou na partida (para XP/moedas/histórico). */
     private int correctCount;
 
@@ -83,6 +86,12 @@ public class GamePlayer {
     public void setFrame(String frame) { this.frame = frame; }
     public String getBanner() { return banner; }
     public void setBanner(String banner) { this.banner = banner; }
+    public String getFont() { return font; }
+    public void setFont(String font) { this.font = font; }
+    public String getNameStyle() { return nameStyle; }
+    public void setNameStyle(String nameStyle) { this.nameStyle = nameStyle; }
+    public String getNameEffect() { return nameEffect; }
+    public void setNameEffect(String nameEffect) { this.nameEffect = nameEffect; }
     public int getCorrectCount() { return correctCount; }
     public void incrementCorrectCount() { this.correctCount++; }
 }

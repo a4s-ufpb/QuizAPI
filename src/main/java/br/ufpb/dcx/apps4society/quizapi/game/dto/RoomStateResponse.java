@@ -39,6 +39,9 @@ public record RoomStateResponse(
             String title,
             String frame,
             String banner,
+            String font,
+            String nameStyle,
+            String nameEffect,
             int correctCount
     ) {}
 

@@ -80,6 +80,19 @@ public class GameRoomService {
         return toState(room);
     }
 
+    /**
+     * Cria uma sala de confronto de torneio: gerenciada (a saída do líder não a
+     * fecha), com início automático quando {@code autoStartThreshold} jogadores
+     * se conectarem. A config já deve vir com hostPlays=true e AdvanceMode.AUTO.
+     */
+    public synchronized RoomStateResponse createTournamentRoom(CreateRoomRequest request, int autoStartThreshold) {
+        RoomStateResponse state = createRoom(request);
+        GameRoom room = rooms.get(state.code());
+        room.setTournamentManaged(true);
+        room.setAutoStartThreshold(autoStartThreshold);
+        return toState(room);
+    }
+
     public synchronized RoomStateResponse getState(String code) {
         return toState(requireRoom(code));
     }
@@ -110,7 +123,21 @@ public class GameRoomService {
             player.setUserUuid(userUuid);
             applyCosmetics(player, userUuid);
         }
+        room.getConnectedPlayers().add(playerId);
         broadcastState(room);
+        maybeAutoStart(room);
+    }
+
+    /**
+     * Salas de torneio começam sozinhas: quando o número esperado de
+     * adversários já se conectou, dispara a contagem regressiva e a 1ª questão
+     * sem depender de nenhum líder clicar em "iniciar".
+     */
+    private void maybeAutoStart(GameRoom room) {
+        if (room.getAutoStartThreshold() <= 0) return;
+        if (room.getStatus() != RoomStatus.LOBBY) return;
+        if (room.getConnectedPlayers().size() < room.getAutoStartThreshold()) return;
+        startGame(room);
     }
 
     private int countNonHostPlayers(GameRoom room) {
@@ -125,6 +152,9 @@ public class GameRoomService {
             player.setTitle(user.getEquippedTitle());
             player.setFrame(user.getEquippedFrame());
             player.setBanner(user.getEquippedBanner());
+            player.setFont(user.getEquippedFont());
+            player.setNameStyle(user.getEquippedNameStyle());
+            player.setNameEffect(user.getEquippedNameEffect());
         } catch (IllegalArgumentException ignored) {
             // userUuid não é um UUID válido (ex.: convidado) — sem cosméticos.
         }
@@ -133,7 +163,11 @@ public class GameRoomService {
     public synchronized void leave(String code, String playerId) {
         GameRoom room = rooms.get(code);
         if (room == null) return;
-        if (playerId.equals(room.getHostId())) {
+        room.getConnectedPlayers().remove(playerId);
+        // Numa sala de torneio o líder é um jogador comum do confronto: sua saída
+        // NÃO encerra a sala (o torneio ainda precisa apurar o vencedor pelo
+        // estado final). A sala é recolhida depois pela varredura de ociosas.
+        if (playerId.equals(room.getHostId()) && !room.isTournamentManaged()) {
             closeRoom(room);
             return;
         }
@@ -303,24 +337,32 @@ public class GameRoomService {
             sendError(code, "Apenas o líder pode iniciar.");
             return;
         }
-        if (room.getStatus() != RoomStatus.LOBBY) return;
-        if (room.getThemeId() == null) {
-            sendError(code, "Selecione um quiz antes de iniciar.");
-            return;
-        }
         // O líder pode iniciar mesmo sem todos prontos — o front exibe uma
         // confirmação antes de enviar o start nesse caso.
+        startGame(room);
+    }
 
+    /**
+     * Inicia a partida (contagem + 1ª questão). Usado tanto pelo comando manual
+     * do líder quanto pelo auto-início das salas de torneio. Não valida líder —
+     * quem chama é responsável por isso.
+     */
+    private void startGame(GameRoom room) {
+        if (room.getStatus() != RoomStatus.LOBBY) return;
+        if (room.getThemeId() == null) {
+            sendError(room.getCode(), "Selecione um quiz antes de iniciar.");
+            return;
+        }
         List<Question> questions = loadQuestions(room.getThemeId(), room.getConfig().questionCount());
         if (questions.isEmpty()) {
-            sendError(code, "Este quiz não possui questões.");
+            sendError(room.getCode(), "Este quiz não possui questões.");
             return;
         }
         room.setQuestions(questions);
         room.getPlayers().values().forEach(GamePlayer::resetForNewGame);
 
         messagingTemplate.convertAndSend(topic(room.getCode()), GameEvent.countdown(COUNTDOWN_SECONDS));
-        scheduler.schedule(() -> startFirstQuestionSafely(code), COUNTDOWN_SECONDS, TimeUnit.SECONDS);
+        scheduler.schedule(() -> startFirstQuestionSafely(room.getCode()), COUNTDOWN_SECONDS, TimeUnit.SECONDS);
     }
 
     private void startFirstQuestionSafely(String code) {
@@ -337,6 +379,8 @@ public class GameRoomService {
         if (room.getStatus() != RoomStatus.IN_QUESTION) return;
         GamePlayer player = room.getPlayers().get(playerId);
         if (player == null || player.isAnsweredCurrent()) return;
+        // Líder espectador (não conta) não responde; só participantes que pontuam.
+        if (!room.counts(player)) return;
         if (room.getConfig().roomMode() == RoomMode.TEAM && !player.isCaptain()) return;
         if (player.isEliminated()) return;
 
@@ -544,9 +588,8 @@ public class GameRoomService {
      * pra próxima rodada — nesse caso ninguém é eliminado (rodada "de graça").
      */
     private void applySurvivalElimination(GameRoom room, Long correctId) {
-        boolean soloHost = room.getPlayers().size() == 1;
         List<GamePlayer> active = room.getPlayers().values().stream()
-                .filter(p -> !p.isHost() || soloHost)
+                .filter(room::counts)
                 .filter(p -> !p.isEliminated())
                 .toList();
 
@@ -584,9 +627,8 @@ public class GameRoomService {
     /** Poder "roubar pontos": quem responder certo primeiro rouba STEAL_AMOUNT de cada outro jogador ativo. */
     private void applyStealPoints(GameRoom room, Long correctId) {
         if (correctId == null) return;
-        boolean soloHost = room.getPlayers().size() == 1;
         GamePlayer thief = room.getPlayers().values().stream()
-                .filter(p -> !p.isHost() || soloHost)
+                .filter(room::counts)
                 .filter(GamePlayer::isAnsweredCurrent)
                 .filter(p -> correctId.equals(p.getCurrentAnswerId()))
                 .min(Comparator.comparingLong(GamePlayer::getAnsweredAtMillis))
@@ -596,7 +638,7 @@ public class GameRoomService {
         int stolenTotal = 0;
         for (GamePlayer p : room.getPlayers().values()) {
             if (p == thief) continue;
-            if (p.isHost() && !soloHost) continue;
+            if (!room.counts(p)) continue;
             int steal = Math.min(STEAL_AMOUNT, Math.max(0, p.getScore()));
             p.addScore(-steal);
             stolenTotal += steal;
@@ -645,7 +687,7 @@ public class GameRoomService {
         List<RoomStateResponse.PlayerView> players = room.getPlayers().values().stream()
                 .map(p -> new RoomStateResponse.PlayerView(
                         p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid(), p.isEliminated(),
-                        p.getTitle(), p.getFrame(), p.getBanner(), p.getCorrectCount()))
+                        p.getTitle(), p.getFrame(), p.getBanner(), p.getFont(), p.getNameStyle(), p.getNameEffect(), p.getCorrectCount()))
                 .toList();
         return new RoomStateResponse(
                 room.getCode(), room.getHostId(), room.getThemeId(), room.getThemeName(), room.getThemeImageUrl(),
@@ -678,19 +720,18 @@ public class GameRoomService {
 
     private List<RoomStateResponse.PlayerView> scoreboard(GameRoom room) {
         return room.getPlayers().values().stream()
-                .filter(p -> !p.isHost() || room.getPlayers().size() == 1)
+                .filter(room::counts)
                 .sorted(Comparator.comparingInt(GamePlayer::getScore).reversed())
                 .map(p -> new RoomStateResponse.PlayerView(
                         p.getId(), p.getName(), p.isHost(), p.isReady(), p.getTeamId(), p.getScore(), p.getAvatar(), p.isCaptain(), p.getUserUuid(), p.isEliminated(),
-                        p.getTitle(), p.getFrame(), p.getBanner(), p.getCorrectCount()))
+                        p.getTitle(), p.getFrame(), p.getBanner(), p.getFont(), p.getNameStyle(), p.getNameEffect(), p.getCorrectCount()))
                 .toList();
     }
 
     /** Distribuição de respostas por alternativa da questão encerrada (host não conta, exceto jogando sozinho). */
     private List<QuestionResultView.AlternativeCountView> alternativeCounts(GameRoom room, Question question) {
-        boolean soloHost = room.getPlayers().size() == 1;
         List<GamePlayer> answering = room.getPlayers().values().stream()
-                .filter(p -> !p.isHost() || soloHost)
+                .filter(room::counts)
                 .toList();
         // Mesma ordem enviada no QuestionView — o front usa a posição pra manter
         // as cores das barras iguais às dos botões de alternativa.
@@ -714,7 +755,7 @@ public class GameRoomService {
 
     private List<QuestionResultView.PlayerAnswerView> playerAnswers(GameRoom room, Long correctId) {
         return room.getPlayers().values().stream()
-                .filter(p -> !p.isHost() || room.getPlayers().size() == 1)
+                .filter(room::counts)
                 .map(p -> new QuestionResultView.PlayerAnswerView(
                         p.getId(), p.getName(), p.isAnsweredCurrent(),
                         p.getCurrentAnswerId() != null && p.getCurrentAnswerId().equals(correctId)))
