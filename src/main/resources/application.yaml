@@ -1,6 +1,10 @@
 spring:
   profiles:
     active: ${APP_PROFILE:dev}
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 5MB
   output:
     ansi:
       enabled: always

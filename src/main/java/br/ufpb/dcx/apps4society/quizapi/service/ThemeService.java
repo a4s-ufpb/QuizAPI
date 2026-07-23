@@ -14,18 +14,22 @@ import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
 import br.ufpb.dcx.apps4society.quizapi.util.ImageValidator;
 import br.ufpb.dcx.apps4society.quizapi.util.Messages;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @Service
 public class ThemeService {
     private static final String THEME_IMAGE_PREFIX = "themes/";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private ThemeRepository repository;
     private UserService userService;
@@ -57,6 +61,79 @@ public class ThemeService {
 
         repository.save(saveTheme);
         return saveTheme.entityToResponse();
+    }
+
+    @CacheEvict(value = "themes", allEntries = true)
+    public ThemeResponse insertThemeMultipart(String name, String description, String materialsJson,
+                                               MultipartFile imageFile, String imageUrl, String token)
+            throws ThemeAlreadyExistsException {
+        Theme existing = repository.findByNameIgnoreCase(name);
+        if (existing != null) {
+            throw new ThemeAlreadyExistsException("Esse tema já foi cadastrado, tente novamente com outro Nome");
+        }
+
+        User user = userService.findUserByToken(token);
+
+        String finalImageUrl;
+        if (imageFile != null && !imageFile.isEmpty()) {
+            finalImageUrl = imageStorageService.upload(imageFile, THEME_IMAGE_PREFIX);
+        } else if (imageUrl != null && !imageUrl.isBlank()) {
+            finalImageUrl = imageStorageService.upload(imageUrl, THEME_IMAGE_PREFIX);
+        } else {
+            finalImageUrl = null;
+        }
+
+        List<MaterialRequest> materials = parseMaterials(materialsJson);
+        Theme saveTheme = new Theme(name, finalImageUrl, description, user);
+        applyMaterials(saveTheme, materials);
+        user.addTheme(saveTheme);
+        repository.save(saveTheme);
+        return saveTheme.entityToResponse();
+    }
+
+    @CacheEvict(value = "themes", allEntries = true)
+    public ThemeResponse updateThemeMultipart(Long id, String name, String description, String materialsJson,
+                                               MultipartFile imageFile, String imageUrl, String token)
+            throws UserNotHavePermissionException, ThemeAlreadyExistsException {
+        User user = userService.findUserByToken(token);
+
+        Theme theme = repository.findById(id)
+                .orElseThrow(() -> new ThemeNotFoundException(Messages.THEME_NOT_FOUND));
+
+        if (user.userNotHavePermission(theme.getCreator())) {
+            throw new UserNotHavePermissionException("Usuário não tem permissão para atualizar esse tema");
+        }
+
+        Theme themeTestName = repository.findByNameIgnoreCase(name);
+        if (!theme.equals(themeTestName) && themeTestName != null) {
+            throw new ThemeAlreadyExistsException("Esse tema já foi cadastrado, tente novamente com outro Nome");
+        }
+
+        String finalImageUrl;
+        if (imageFile != null && !imageFile.isEmpty()) {
+            finalImageUrl = imageStorageService.upload(imageFile, THEME_IMAGE_PREFIX);
+        } else if (imageUrl != null && !imageUrl.isBlank()) {
+            finalImageUrl = imageStorageService.upload(imageUrl, THEME_IMAGE_PREFIX);
+        } else {
+            finalImageUrl = theme.getImageUrl();
+        }
+
+        List<MaterialRequest> materials = parseMaterials(materialsJson);
+        theme.setName(name);
+        theme.setImageUrl(finalImageUrl);
+        theme.setDescription(description);
+        applyMaterials(theme, materials);
+        repository.save(theme);
+        return theme.entityToResponse();
+    }
+
+    private List<MaterialRequest> parseMaterials(String json) {
+        if (json == null || json.isBlank() || json.equals("[]")) return List.of();
+        try {
+            return OBJECT_MAPPER.readValue(json, new TypeReference<List<MaterialRequest>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     /** Substitui os materiais do tema pelos informados na requisição. */

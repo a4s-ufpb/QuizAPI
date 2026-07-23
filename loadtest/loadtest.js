@@ -12,6 +12,7 @@
  */
 const { Client } = require("@stomp/stompjs");
 const WebSocket = require("ws");
+const SockJS = require("sockjs-client");
 Object.assign(global, { WebSocket });
 
 const args = Object.fromEntries(
@@ -22,6 +23,11 @@ const args = Object.fromEntries(
 
 const BASE = args.url || "http://localhost:8080";
 const WS_URL = BASE.replace("http", "ws") + "/ws/websocket";
+// `--sockjs 1` conecta via SockJS (idêntico ao navegador, com fallback para
+// polling HTTP). Necessário em ambientes cujo proxy não faz upgrade de
+// WebSocket; sem a flag usa WebSocket cru, que é mais leve.
+const USE_SOCKJS = Boolean(args.sockjs);
+const SOCKJS_URL = BASE + "/ws";
 const ROOMS = Number(args.rooms || 1);
 const PLAYERS = Number(args.players || 12); // por sala, sem contar o host
 const QUESTIONS = Number(args.questions || 6);
@@ -31,8 +37,10 @@ const HOST_NEXT_DELAY = 700;
 const SCENARIO_TIMEOUT_MS = Number(args.timeout || 240000);
 
 let shuttingDownCount = 0; // clientes desativados de propósito não contam como queda
+// Momento (relógio local) em que o líder de cada sala enviou o "next".
+const nextSentAt = new Map();
 const metrics = {
-  joinLatency: [], questionLatency: [], resultLatency: [],
+  joinLatency: [], questionLatency: [], resultLatency: [], advanceLatency: [],
   errors: [], disconnects: 0, roomsFinished: 0, questionsPlayed: 0,
   answersSent: 0,
 };
@@ -62,19 +70,31 @@ async function adminToken() {
   return body.token || body.accessToken;
 }
 
+/**
+ * Tema usado nas partidas: `--themeId <id>` explícito (necessário para apontar
+ * o teste a um ambiente real) ou, por padrão, o tema criado pelo seed local.
+ */
 async function fetchThemeId() {
+  if (args.themeId) return Number(args.themeId);
+
   const res = await fetch(`${BASE}/v1/theme?page=0&size=50`);
   if (!res.ok) throw new Error(`GET /v1/theme -> ${res.status}`);
   const page = await res.json();
   const theme = (page.content || []).find((t) => t.name?.startsWith("Seed"));
-  if (!theme) throw new Error("Tema seed não encontrado — rode seed.ps1");
+  if (!theme) {
+    throw new Error(
+      "Tema seed não encontrado — rode seed.ps1 ou informe --themeId <id>"
+    );
+  }
   return theme.id;
 }
 
 function connectStomp() {
   return new Promise((resolve, reject) => {
     const client = new Client({
-      brokerURL: WS_URL,
+      ...(USE_SOCKJS
+        ? { webSocketFactory: () => new SockJS(SOCKJS_URL) }
+        : { brokerURL: WS_URL }),
       reconnectDelay: 0,
       heartbeatIncoming: 5000,
       heartbeatOutgoing: 5000,
@@ -117,7 +137,13 @@ async function runPlayer(code, index) {
         break;
       case "QUESTION": {
         const q = ev.data;
+        // Atenção: startAt vem do relógio do SERVIDOR e é comparado com o
+        // relógio local — só é confiável quando os dois estão sincronizados.
         metrics.questionLatency.push(Math.max(0, now - q.startAt));
+        // Métrica imune a diferença de relógio: mede do "next" do líder
+        // (relógio local) até a questão chegar no jogador (relógio local).
+        const sentAt = nextSentAt.get(code);
+        if (sentAt) metrics.advanceLatency.push(now - sentAt);
         if (q.index === answeredIndex) break;
         answeredIndex = q.index;
         const alt = q.alternatives[Math.floor(Math.random() * q.alternatives.length)];
@@ -180,7 +206,10 @@ async function runRoom(roomIndex, themeId, token) {
       try { ev = JSON.parse(msg.body); } catch { return; }
       if (ev.type === "RESULT") {
         metrics.questionsPlayed++;
-        setTimeout(() => send(hostClient, "next", { code, hostId }), HOST_NEXT_DELAY);
+        setTimeout(() => {
+          nextSentAt.set(code, Date.now());
+          send(hostClient, "next", { code, hostId });
+        }, HOST_NEXT_DELAY);
       } else if (ev.type === "STATE" && ev.data.status === "FINISHED") {
         metrics.roomsFinished++;
         resolve();
@@ -228,7 +257,8 @@ async function runRoom(roomIndex, themeId, token) {
   console.log(`--- RESULTADO (${durationS}s) ---`);
   console.log(`salas concluídas: ${metrics.roomsFinished}/${ROOMS} | questões jogadas: ${metrics.questionsPlayed} | respostas: ${metrics.answersSent}`);
   console.log(`join->STATE:      ${stats(metrics.joinLatency)}`);
-  console.log(`entrega QUESTION: ${stats(metrics.questionLatency)}`);
+  console.log(`entrega QUESTION: ${stats(metrics.questionLatency)}  (depende de relogio sincronizado)`);
+  console.log(`next->QUESTION:   ${stats(metrics.advanceLatency)}`);
   console.log(`answer->RESULT:   ${stats(metrics.resultLatency)}`);
   console.log(`desconexões: ${metrics.disconnects} | erros: ${metrics.errors.length}`);
   if (metrics.errors.length) {

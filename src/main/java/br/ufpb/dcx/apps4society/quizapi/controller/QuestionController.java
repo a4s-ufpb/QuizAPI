@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -48,6 +49,22 @@ public class QuestionController {
     public ResponseEntity<QuestionResponse> insertQuestion(@RequestBody @Valid QuestionRequest questionRequest, @PathVariable Long idTheme,
                                                            @RequestHeader(value = "Authorization") String token) throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.insertQuestion(questionRequest, idTheme, token));
+    }
+
+    @PostMapping(value = "/{idTheme}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<QuestionResponse> insertQuestionMultipart(
+            @PathVariable Long idTheme,
+            @RequestParam String title,
+            @RequestParam(required = false) String imageUrl,
+            @RequestParam(required = false) String imageOneUrl,
+            @RequestParam(required = false) String imageTwoUrl,
+            @RequestParam(required = false) String imagesOrder,
+            @RequestParam(name = "imageFile1", required = false) MultipartFile imageFile1,
+            @RequestParam(name = "imageFile2", required = false) MultipartFile imageFile2,
+            @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.insertQuestionMultipart(title, imageUrl, imageOneUrl, imageTwoUrl, imagesOrder,
+                        imageFile1, imageFile2, idTheme, token));
     }
 
     @Operation(tags = "Question", summary = "Remove Question", responses ={
@@ -84,6 +101,21 @@ public class QuestionController {
     public ResponseEntity<QuestionResponse> updateQuestion(@PathVariable Long id, @RequestBody @Valid QuestionUpdate questionUpdate,
                                                            @RequestHeader("Authorization") String token) throws UserNotHavePermissionException, ImageSizeLimitExceededException {
         return ResponseEntity.ok(service.updateQuestion(id, questionUpdate, token));
+    }
+
+    @PatchMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<QuestionResponse> updateQuestionMultipart(
+            @PathVariable Long id,
+            @RequestParam String title,
+            @RequestParam(required = false) String imageUrl,
+            @RequestParam(required = false) String imageOneUrl,
+            @RequestParam(required = false) String imageTwoUrl,
+            @RequestParam(required = false) String imagesOrder,
+            @RequestParam(name = "imageFile1", required = false) MultipartFile imageFile1,
+            @RequestParam(name = "imageFile2", required = false) MultipartFile imageFile2,
+            @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
+        return ResponseEntity.ok(service.updateQuestionMultipart(id, title, imageUrl, imageOneUrl, imageTwoUrl,
+                imagesOrder, imageFile1, imageFile2, token));
     }
 
     @Operation(tags = "Question", summary = "Find 10 Questions by Theme", responses ={

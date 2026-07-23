@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/v1/theme")
@@ -44,6 +45,18 @@ public class ThemeController {
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ThemeResponse> insertTheme(@RequestBody @Valid ThemeRequest themeRequest, @RequestHeader("Authorization") String token) throws ThemeAlreadyExistsException, ImageSizeLimitExceededException {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.insertTheme(themeRequest, token));
+    }
+
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ThemeResponse> insertThemeMultipart(
+            @RequestParam String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String imageUrl,
+            @RequestParam(required = false) String materials,
+            @RequestParam(name = "imageFile", required = false) MultipartFile imageFile,
+            @RequestHeader("Authorization") String token) throws ThemeAlreadyExistsException {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.insertThemeMultipart(name, description, materials, imageFile, imageUrl, token));
     }
 
     @Operation(tags = "Theme", summary = "Remove Theme", responses ={
@@ -110,6 +123,18 @@ public class ThemeController {
                                                      @RequestBody @Valid ThemeUpdate themeUpdate,
                                                      @RequestHeader("Authorization") String token) throws UserNotHavePermissionException, ThemeAlreadyExistsException, ImageSizeLimitExceededException {
         return ResponseEntity.ok(service.updateTheme(id,themeUpdate, token));
+    }
+
+    @PatchMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ThemeResponse> updateThemeMultipart(
+            @PathVariable Long id,
+            @RequestParam String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String imageUrl,
+            @RequestParam(required = false) String materials,
+            @RequestParam(name = "imageFile", required = false) MultipartFile imageFile,
+            @RequestHeader("Authorization") String token) throws UserNotHavePermissionException, ThemeAlreadyExistsException {
+        return ResponseEntity.ok(service.updateThemeMultipart(id, name, description, materials, imageFile, imageUrl, token));
     }
 
 }

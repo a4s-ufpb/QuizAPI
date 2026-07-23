@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@stomp/stompjs": "^7.0.0",
+    "sockjs-client": "^1.6.1",
     "ws": "^8.0.0"
   }
 }

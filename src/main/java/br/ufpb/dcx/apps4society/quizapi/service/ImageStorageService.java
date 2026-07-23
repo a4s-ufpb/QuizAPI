@@ -5,6 +5,7 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -69,17 +70,39 @@ public class ImageStorageService {
         return publicUrl + "/" + bucket + "/" + objectKey;
     }
 
+    public String upload(MultipartFile file, String prefix) {
+        if (file == null || file.isEmpty()) return null;
+        try {
+            byte[] webpBytes = toWebpFromBytes(file.getBytes());
+            String objectKey = prefix + UUID.randomUUID() + ".webp";
+            try (ByteArrayInputStream input = new ByteArrayInputStream(webpBytes)) {
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(bucket)
+                        .object(objectKey)
+                        .stream(input, webpBytes.length, -1)
+                        .contentType("image/webp")
+                        .build());
+            }
+            return publicUrl + "/" + bucket + "/" + objectKey;
+        } catch (IOException e) {
+            throw new ImageStorageException("Falha ao ler arquivo de imagem", e);
+        } catch (Exception e) {
+            throw new ImageStorageException("Falha ao enviar imagem para o MinIO", e);
+        }
+    }
+
     private byte[] toWebp(String base64Image) {
         String data = base64Image;
         int commaIndex = data.indexOf(',');
         if (data.startsWith("data:") && commaIndex != -1) {
             data = data.substring(commaIndex + 1);
         }
+        return toWebpFromBytes(Base64.getDecoder().decode(data));
+    }
 
-        byte[] decoded = Base64.getDecoder().decode(data);
-
+    private byte[] toWebpFromBytes(byte[] imageBytes) {
         try {
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(decoded));
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
             if (image == null) {
                 throw new ImageStorageException("Formato de imagem inválido", null);
             }

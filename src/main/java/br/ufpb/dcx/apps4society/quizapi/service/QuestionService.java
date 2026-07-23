@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +62,67 @@ public class QuestionService {
 
         questionRepository.save(question);
         return question.entityToResponse();
+    }
+
+    public QuestionResponse insertQuestionMultipart(String title, String imageUrl, String imageOneUrl,
+                                                     String imageTwoUrl, String imagesOrder,
+                                                     MultipartFile imageFile1, MultipartFile imageFile2,
+                                                     Long idTheme, String token) throws UserNotHavePermissionException {
+        User creator = userService.findUserByToken(token);
+
+        Theme theme = themeRepository.findById(idTheme)
+                .orElseThrow(() -> new ThemeNotFoundException("Tema não encontrado"));
+
+        if (creator.userNotHavePermission(theme.getCreator())) {
+            throw new UserNotHavePermissionException("Você não tem permissão para cadastrar questões nesse Tema");
+        }
+
+        String finalImageOneUrl = resolveImageUrl(imageFile1, imageOneUrl, "questions/");
+        String finalImageTwoUrl = resolveImageUrl(imageFile2, imageTwoUrl, "questions/");
+
+        QuestionRequest req = new QuestionRequest(title, imageUrl, null, null, imagesOrder);
+        Question question = new Question(req, theme, creator, finalImageOneUrl, finalImageTwoUrl);
+        theme.addQuestion(question);
+        creator.addQuestion(question);
+
+        questionRepository.save(question);
+        return question.entityToResponse();
+    }
+
+    public QuestionResponse updateQuestionMultipart(Long id, String title, String imageUrl, String imageOneUrl,
+                                                     String imageTwoUrl, String imagesOrder,
+                                                     MultipartFile imageFile1, MultipartFile imageFile2,
+                                                     String token) throws UserNotHavePermissionException {
+        User user = userService.findUserByToken(token);
+
+        Question question = questionRepository.findById(id)
+                .orElseThrow(() -> new QuestionNotFoundException(Messages.QUESTION_NOT_FOUND));
+
+        if (user.userNotHavePermission(question.getCreator())) {
+            throw new UserNotHavePermissionException("Usuário não tem permissão para atualizar essa questão");
+        }
+
+        String finalImageOneUrl = resolveImageUrl(imageFile1, imageOneUrl, "questions/");
+        String finalImageTwoUrl = resolveImageUrl(imageFile2, imageTwoUrl, "questions/");
+
+        question.setTitle(title);
+        question.setImageUrl(imageUrl);
+        question.setImageOneUrl(finalImageOneUrl);
+        question.setImageTwoUrl(finalImageTwoUrl);
+        question.setImagesOrder(imagesOrder);
+        questionRepository.save(question);
+
+        return question.entityToResponse();
+    }
+
+    private String resolveImageUrl(MultipartFile file, String existingUrl, String prefix) {
+        if (file != null && !file.isEmpty()) {
+            return imageStorageService.upload(file, prefix);
+        }
+        if (existingUrl != null && !existingUrl.isBlank()) {
+            return imageStorageService.upload(existingUrl);
+        }
+        return null;
     }
 
     public void removeQuestion(Long id, String token) throws UserNotHavePermissionException {
