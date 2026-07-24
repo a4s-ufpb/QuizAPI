@@ -26,8 +26,18 @@ public class Tournament {
     /** rounds.get(0) = oitavas/primeira rodada, etc. */
     private final List<List<Match>> rounds = new ArrayList<>();
     private String championId;
-    /** Capacidade máxima (não conta o host). Default 12; definido na criação. */
+    /** Capacidade máxima. Default 12; definido na criação. */
     private int maxPlayers = 12;
+
+    /**
+     * Quiz escolhido pelo organizador para cada rodada do chaveamento (índice 0 =
+     * 1ª rodada). Dimensionado ao travar as chaves (fase CONFIGURING); cada
+     * confronto daquela rodada usa esse tema. null = ainda não escolhido.
+     */
+    private final List<Long> roundThemeIds = new ArrayList<>();
+    private final List<String> roundThemeNames = new ArrayList<>();
+    /** Nº de jogadores fixado ao travar as chaves (4, 8 ou 16). */
+    private int bracketSize;
 
     private long lastActivityMillis = System.currentTimeMillis();
 
@@ -57,4 +67,8 @@ public class Tournament {
     public void setChampionId(String championId) { this.championId = championId; }
     public int getMaxPlayers() { return maxPlayers; }
     public void setMaxPlayers(int maxPlayers) { this.maxPlayers = maxPlayers; }
+    public List<Long> getRoundThemeIds() { return roundThemeIds; }
+    public List<String> getRoundThemeNames() { return roundThemeNames; }
+    public int getBracketSize() { return bracketSize; }
+    public void setBracketSize(int bracketSize) { this.bracketSize = bracketSize; }
 }

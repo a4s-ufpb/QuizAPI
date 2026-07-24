@@ -157,6 +157,7 @@ public class UserController {
         return ResponseEntity.ok(new PublicProfileResponse(
                 user.getUuid(), user.getName(), user.getLikes(), user.getXp(), user.getLevel(),
                 user.getEquippedTitle(), user.getEquippedFrame(), user.getEquippedBanner(),
+                user.getEquippedFont(), user.getEquippedNameStyle(), user.getEquippedNameEffect(),
                 achievementService.findAchievements(user)
         ));
     }

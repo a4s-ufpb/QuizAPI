@@ -18,7 +18,14 @@ public record GameConfig(
         Integer questionCount,
         Integer maxPlayersPerTeam,
         GameStyle gameStyle,
-        Integer maxPlayers
+        Integer maxPlayers,
+        /**
+         * Quando true, o criador da sala também joga (pontua e aparece nos
+         * placares) além de manter as funções de líder. Default false =
+         * "modo espectador" (comportamento clássico Kahoot). Sempre true nas
+         * salas de torneio, onde não há líder-espectador.
+         */
+        Boolean hostPlays
 ) {
     // Capacidade máxima da sala (não conta o host). O valor efetivo permitido
     // depende do papel de quem cria (convidado/logado/admin) e é validado no
@@ -27,7 +34,7 @@ public record GameConfig(
     public static final int ABSOLUTE_MAX_PLAYERS = 48;
 
     public static GameConfig defaults() {
-        return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.HOST, 120, 10, null, GameStyle.NORMAL, DEFAULT_MAX_PLAYERS);
+        return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.HOST, 120, 10, null, GameStyle.NORMAL, DEFAULT_MAX_PLAYERS, false);
     }
 
     /** Preenche campos nulos com os defaults e aplica limites saudáveis. */
@@ -45,14 +52,16 @@ public record GameConfig(
         return new GameConfig(
                 roomMode != null ? roomMode : d.roomMode(),
                 scoringMode != null ? scoringMode : d.scoringMode(),
-                // Avanço automático foi descontinuado: partidas multiplayer são
-                // sempre avançadas manualmente pelo líder.
-                AdvanceMode.HOST,
+                // Avanço manual pelo líder (HOST) nas salas normais; o modo AUTO
+                // (avanço por tempo, sem intermediário) é reservado ao torneio,
+                // que o define explicitamente ao criar a sala do confronto.
+                advanceMode != null ? advanceMode : d.advanceMode(),
                 time,
                 count,
                 maxPerTeam,
                 gameStyle != null ? gameStyle : d.gameStyle(),
-                max
+                max,
+                hostPlays != null ? hostPlays : d.hostPlays()
         );
     }
 }

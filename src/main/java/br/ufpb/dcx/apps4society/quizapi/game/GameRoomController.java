@@ -55,7 +55,7 @@ public class GameRoomController {
         return new GameConfig(
                 config.roomMode(), config.scoringMode(), config.advanceMode(),
                 config.questionTimeSeconds(), config.questionCount(),
-                perTeam, config.gameStyle(), max);
+                perTeam, config.gameStyle(), max, config.hostPlays());
     }
 
     @GetMapping("/room/{code}")

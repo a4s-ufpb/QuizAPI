@@ -51,14 +51,29 @@ class GameRoomServiceTest {
     private static final Long THEME_ID = 1L;
     private static final String HOST_ID = "host-1";
 
+    private User creator;
+    private Theme theme;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        User creator = new User(UUID.randomUUID(), "Creator", "c@c.com", "12345678", Role.USER);
-        Theme theme = new Theme(THEME_ID, "Tema", creator);
+        creator = new User(UUID.randomUUID(), "Creator", "c@c.com", "12345678", Role.USER);
+        theme = new Theme(THEME_ID, "Tema", creator);
         lenient().when(themeRepository.findById(THEME_ID)).thenReturn(java.util.Optional.of(theme));
         lenient().when(questionRepository.findByThemeId(THEME_ID)).thenReturn(buildQuestions(theme, creator, 3));
         service = new GameRoomService(questionRepository, themeRepository, userRepository, messagingTemplate);
+    }
+
+    /** Config com o criador jogando (hostPlays=true) — item "modo do criador". */
+    private GameConfig configHostPlays() {
+        return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.HOST,
+                5, 3, null, GameStyle.NORMAL, 12, true);
+    }
+
+    /** Config de sala de torneio: criador joga + avanço automático por tempo. */
+    private GameConfig configTournament() {
+        return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.AUTO,
+                5, 3, null, GameStyle.NORMAL, 2, true);
     }
 
     private List<Question> buildQuestions(Theme theme, User creator, int count) {
@@ -74,7 +89,7 @@ class GameRoomServiceTest {
 
     private GameConfig config() {
         return new GameConfig(RoomMode.INDIVIDUAL, ScoringMode.SPEED, AdvanceMode.HOST,
-                5, 3, null, GameStyle.NORMAL, 12);
+                5, 3, null, GameStyle.NORMAL, 12, false);
     }
 
     private String createRoomWithPlayer(String playerId) {
@@ -204,5 +219,97 @@ class GameRoomServiceTest {
         service.skipNextQuestion(code, "p1"); // não é o líder
 
         assertEquals(0, service.getState(code).skippedCount());
+    }
+
+    // ---------- modo "criador participa" (hostPlays) ----------
+
+    @Test
+    void hostPlaysFalse_hostAnswerIsIgnoredAndDoesNotScore() throws InterruptedException {
+        // Sala padrão (espectador): a resposta do líder é ignorada e o jogador
+        // sozinho encerra a questão sem depender do líder.
+        String code = createRoomWithPlayer("p1");
+        service.start(code, HOST_ID);
+        Thread.sleep(COUNTDOWN_WAIT_MS);
+        assertEquals("IN_QUESTION", service.getState(code).status());
+
+        service.answer(code, HOST_ID, firstAlternativeId(0)); // líder não conta
+        RoomStateResponse afterHost = service.getState(code);
+        assertEquals("IN_QUESTION", afterHost.status(), "líder espectador não deve encerrar a questão");
+        int hostScore = afterHost.players().stream()
+                .filter(p -> p.id().equals(HOST_ID)).findFirst().orElseThrow().score();
+        assertEquals(0, hostScore, "líder espectador não pontua");
+
+        service.answer(code, "p1", firstAlternativeId(0));
+        assertEquals("BETWEEN", service.getState(code).status());
+    }
+
+    @Test
+    void hostPlaysTrue_hostCountsForEndAndScores() throws InterruptedException {
+        // Uma única questão (determinística) para garantir a alternativa correta.
+        lenient().when(questionRepository.findByThemeId(THEME_ID))
+                .thenReturn(buildQuestions(theme, creator, 1));
+
+        RoomStateResponse created = service.createRoom(
+                new CreateRoomRequest(HOST_ID, "Prof", THEME_ID, configHostPlays()));
+        String code = created.code();
+        service.join(code, "p1", "Aluno", null, null);
+        service.start(code, HOST_ID);
+        Thread.sleep(COUNTDOWN_WAIT_MS);
+        assertEquals("IN_QUESTION", service.getState(code).status());
+
+        // Só o jogador respondeu: como o líder também joga, a questão NÃO encerra.
+        service.answer(code, "p1", firstAlternativeId(0));
+        assertEquals("IN_QUESTION", service.getState(code).status(),
+                "com hostPlays o líder também precisa responder");
+
+        service.answer(code, HOST_ID, firstAlternativeId(0));
+        RoomStateResponse state = service.getState(code);
+        assertEquals("BETWEEN", state.status());
+        int hostScore = state.players().stream()
+                .filter(p -> p.id().equals(HOST_ID)).findFirst().orElseThrow().score();
+        assertTrue(hostScore > 0, "líder participante deve pontuar ao acertar");
+    }
+
+    // ---------- salas de torneio (auto-início + gerenciadas) ----------
+
+    @Test
+    void tournamentRoom_autoStartsWhenBothPlayersConnect() throws InterruptedException {
+        RoomStateResponse created = service.createTournamentRoom(
+                new CreateRoomRequest(HOST_ID, "P1", THEME_ID, configTournament()), 2);
+        String code = created.code();
+        assertEquals("LOBBY", service.getState(code).status());
+
+        service.join(code, HOST_ID, "P1", null, null); // 1º adversário conecta
+        assertEquals("LOBBY", service.getState(code).status(), "ainda falta o 2º jogador");
+
+        service.join(code, "p2", "P2", null, null); // 2º conecta -> auto-início
+        Thread.sleep(COUNTDOWN_WAIT_MS);
+        assertEquals("IN_QUESTION", service.getState(code).status());
+    }
+
+    @Test
+    void tournamentRoom_hostLeaveDoesNotCloseRoom() {
+        RoomStateResponse created = service.createTournamentRoom(
+                new CreateRoomRequest(HOST_ID, "P1", THEME_ID, configTournament()), 2);
+        String code = created.code();
+        service.join(code, HOST_ID, "P1", null, null);
+        service.join(code, "p2", "P2", null, null);
+
+        service.leave(code, HOST_ID); // numa sala de torneio isso NÃO encerra a sala
+
+        assertDoesNotThrow(() -> service.getState(code),
+                "sala de torneio deve sobreviver à saída do líder até o torneio apurar o vencedor");
+    }
+
+    @Test
+    void normalRoom_hostLeaveClosesRoom() {
+        RoomStateResponse created = service.createRoom(
+                new CreateRoomRequest(HOST_ID, "Prof", THEME_ID, config()));
+        String code = created.code();
+        service.join(code, "p1", "Aluno", null, null);
+
+        service.leave(code, HOST_ID); // sala normal: líder saindo encerra
+
+        assertThrows(java.util.NoSuchElementException.class, () -> service.getState(code));
     }
 }

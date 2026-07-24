@@ -5,9 +5,11 @@ import br.ufpb.dcx.apps4society.quizapi.game.dto.GameConfig;
 import br.ufpb.dcx.apps4society.quizapi.game.dto.QuestionResultView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -48,6 +50,24 @@ public class GameRoom {
     /** Quantas questões o líder pulou desde o último resultado (zerado a cada questão). */
     private int skippedCount;
 
+    /**
+     * Sala gerenciada por um torneio (confronto do chaveamento). Nesse caso o
+     * líder também joga (config.hostPlays), o avanço é por tempo (AUTO) e a saída
+     * do líder NÃO encerra a sala — o torneio precisa lê-la até o fim (FINISHED)
+     * para apurar o vencedor.
+     */
+    private boolean tournamentManaged;
+
+    /**
+     * Se > 0, a partida inicia automaticamente assim que este número de
+     * jogadores distintos tiver se conectado (usado pelas salas de torneio, que
+     * começam sozinhas quando os dois adversários entram). 0 = início manual.
+     */
+    private int autoStartThreshold;
+
+    /** Ids de jogadores que já se conectaram (enviaram join) — base do auto-início. */
+    private final Set<String> connectedPlayers = new HashSet<>();
+
     public GameRoom(String code, String hostId, GameConfig config) {
         this.code = code;
         this.hostId = hostId;
@@ -67,6 +87,16 @@ public class GameRoom {
         return questions.get(currentIndex);
     }
 
+    /**
+     * O jogador conta como participante que pontua? Verdadeiro para qualquer
+     * não-líder; para o líder, apenas quando ele está sozinho na sala ou o modo
+     * "criador participa" (config.hostPlays) está ativo — inclusive nas salas
+     * de torneio, onde todos os presentes jogam.
+     */
+    public boolean counts(GamePlayer p) {
+        return !p.isHost() || players.size() == 1 || Boolean.TRUE.equals(config.hostPlays());
+    }
+
     public boolean allActivePlayersAnswered() {
         if (config.roomMode() == RoomMode.TEAM) {
             return teams.values().stream()
@@ -77,7 +107,7 @@ public class GameRoom {
                     });
         }
         return players.values().stream()
-                .filter(p -> !p.isHost() || players.size() == 1)
+                .filter(this::counts)
                 .filter(p -> !p.isEliminated())
                 .allMatch(GamePlayer::isAnsweredCurrent);
     }
@@ -85,9 +115,8 @@ public class GameRoom {
     /** Sobrevivência: só termina cedo quando restar no máximo 1 jogador de pé (evita ficar travado esperando). */
     public boolean survivalShouldEndEarly() {
         if (config.gameStyle() != GameStyle.SURVIVAL) return false;
-        boolean soloHost = players.size() == 1;
         long remaining = players.values().stream()
-                .filter(p -> !p.isHost() || soloHost)
+                .filter(this::counts)
                 .filter(p -> !p.isEliminated())
                 .count();
         return remaining <= 1;
@@ -135,4 +164,9 @@ public class GameRoom {
     public void setLastResult(QuestionResultView lastResult) { this.lastResult = lastResult; }
     public int getSkippedCount() { return skippedCount; }
     public void setSkippedCount(int skippedCount) { this.skippedCount = skippedCount; }
+    public boolean isTournamentManaged() { return tournamentManaged; }
+    public void setTournamentManaged(boolean tournamentManaged) { this.tournamentManaged = tournamentManaged; }
+    public int getAutoStartThreshold() { return autoStartThreshold; }
+    public void setAutoStartThreshold(int autoStartThreshold) { this.autoStartThreshold = autoStartThreshold; }
+    public Set<String> getConnectedPlayers() { return connectedPlayers; }
 }

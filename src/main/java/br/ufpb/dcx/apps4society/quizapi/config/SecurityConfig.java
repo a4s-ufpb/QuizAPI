@@ -3,6 +3,7 @@ package br.ufpb.dcx.apps4society.quizapi.config;
 import br.ufpb.dcx.apps4society.quizapi.security.RateLimitFilter;
 import br.ufpb.dcx.apps4society.quizapi.security.SecurityFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,6 +29,8 @@ import java.util.List;
 public class SecurityConfig {
     private SecurityFilter securityFilter;
     private RateLimitFilter rateLimitFilter;
+    @Value("${cors.allowed-origins:http://localhost:5173}")
+    private String allowedOrigin;
 
     @Autowired
     public SecurityConfig(SecurityFilter securityFilter, RateLimitFilter rateLimitFilter) {
@@ -62,11 +65,11 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedOriginPatterns(List.of(allowedOrigin));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
-        config.setAllowCredentials(false);
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

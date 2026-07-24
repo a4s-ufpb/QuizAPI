@@ -33,6 +33,14 @@ public class User implements UserDetails {
     private String equippedFrame;
     @Column(name = "equipped_banner")
     private String equippedBanner;
+    // Cosméticos do nome (só CSS no frontend): fonte, estilo (negrito/itálico/…)
+    // e efeito (cor/gradiente/animação). null = padrão.
+    @Column(name = "equipped_font")
+    private String equippedFont;
+    @Column(name = "equipped_name_style")
+    private String equippedNameStyle;
+    @Column(name = "equipped_name_effect")
+    private String equippedNameEffect;
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
     private List<Theme> themes = new ArrayList<>();
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
@@ -71,7 +79,8 @@ public class User implements UserDetails {
 
     public UserResponse entityToResponse(){
         return new UserResponse(uuid,name,email,role,likes,xp,level,coins,
-                equippedTitle,equippedFrame,equippedBanner);
+                equippedTitle,equippedFrame,equippedBanner,
+                equippedFont,equippedNameStyle,equippedNameEffect);
     }
 
     public String getEquippedTitle() { return equippedTitle; }
@@ -80,6 +89,12 @@ public class User implements UserDetails {
     public void setEquippedTitle(String equippedTitle) { this.equippedTitle = equippedTitle; }
     public void setEquippedFrame(String equippedFrame) { this.equippedFrame = equippedFrame; }
     public void setEquippedBanner(String equippedBanner) { this.equippedBanner = equippedBanner; }
+    public String getEquippedFont() { return equippedFont; }
+    public String getEquippedNameStyle() { return equippedNameStyle; }
+    public String getEquippedNameEffect() { return equippedNameEffect; }
+    public void setEquippedFont(String equippedFont) { this.equippedFont = equippedFont; }
+    public void setEquippedNameStyle(String equippedNameStyle) { this.equippedNameStyle = equippedNameStyle; }
+    public void setEquippedNameEffect(String equippedNameEffect) { this.equippedNameEffect = equippedNameEffect; }
 
     public void addLike(){
         this.likes++;

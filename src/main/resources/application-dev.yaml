@@ -9,3 +9,6 @@ spring:
       # Schema agora é gerenciado pelo Flyway (db/migration) — Hibernate só
       # valida se o mapeamento das entidades bate com o schema real.
       ddl-auto: validate
+
+cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

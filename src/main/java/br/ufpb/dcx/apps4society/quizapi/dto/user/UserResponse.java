@@ -15,6 +15,9 @@ public record UserResponse(
         int coins,
         String equippedTitle,
         String equippedFrame,
-        String equippedBanner
+        String equippedBanner,
+        String equippedFont,
+        String equippedNameStyle,
+        String equippedNameEffect
 ) {
 }

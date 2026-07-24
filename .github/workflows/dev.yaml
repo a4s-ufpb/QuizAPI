@@ -1,4 +1,4 @@
-name: Build and Tests Spring Boot App
+name: CI Dev - Build, Test and Scan
 
 on:
   push:
@@ -6,10 +6,17 @@ on:
   pull_request:
     branches: [main]
 
-jobs:
+# Cancela execuções antigas do mesmo ref quando um novo push chega.
+concurrency:
+  group: ci-dev-${{ github.ref }}
+  cancel-in-progress: true
 
+permissions:
+  contents: read
+
+jobs:
   build-and-test:
-    name: Build Project and Tests
+    name: Build, Test and Package
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -20,9 +27,66 @@ jobs:
         with:
           distribution: 'corretto'
           java-version: '21'
+          cache: 'maven'
 
-      - name: Build Project
-        run: mvn package -DskipTests
+      # `verify` compila, roda os testes (falha o build se algum quebrar) e
+      # empacota o artefato — validação de pacote e testes em um passo só.
+      - name: Build, test and package
+        run: mvn -B verify
 
-      - name: Run tests
-        run: mvn test
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports/*.xml'
+          if-no-files-found: ignore
+          retention-days: 7
+
+  code-scan:
+    name: CodeQL Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          queries: security-and-quality
+
+      - name: Build for analysis
+        run: mvn -B -DskipTests compile
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java-kotlin"
+
+  dependency-review:
+    name: Dependency Review
+    # Só em PR: bloqueia dependências novas com vulnerabilidades conhecidas.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

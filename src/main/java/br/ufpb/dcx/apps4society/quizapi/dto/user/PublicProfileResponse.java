@@ -18,6 +18,9 @@ public record PublicProfileResponse(
         String equippedTitle,
         String equippedFrame,
         String equippedBanner,
+        String equippedFont,
+        String equippedNameStyle,
+        String equippedNameEffect,
         List<AchievementResponse> achievements
 ) {
 }

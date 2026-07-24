@@ -6,6 +6,8 @@ public record StoreItemResponse(
         String description,
         String category,
         int price,
-        boolean owned
+        boolean owned,
+        /** Nível mínimo do usuário para desbloquear a compra deste item. */
+        int requiredLevel
 ) {
 }

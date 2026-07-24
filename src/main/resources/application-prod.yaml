@@ -13,3 +13,6 @@ logging:
     root: WARN
     br.ufpb.dcx.apps4society.quizapi: INFO
     br.ufpb.dcx.apps4society.quizapi.security: DEBUG
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://quizapp.a4s.dev.br}
