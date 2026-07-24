@@ -76,8 +76,6 @@ jobs:
 
   dependency-review:
     name: Dependency Review
-    # Só em PR: bloqueia dependências novas com vulnerabilidades conhecidas.
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
