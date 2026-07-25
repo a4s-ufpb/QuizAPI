@@ -16,6 +16,7 @@ public class StatisticPerConclusion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private UUID creatorId;
+    private UUID studentUuid;
     private String studentName;
     private String themeName;
     private Double percentagemOfHits;
@@ -37,7 +38,7 @@ public class StatisticPerConclusion {
     }
 
     public StatisticResponse entityToResponse() {
-        return new StatisticResponse(id, creatorId, studentName, themeName, percentagemOfHits, date);
+        return new StatisticResponse(id, creatorId, studentUuid, studentName, themeName, percentagemOfHits, date);
     }
 
     public Long getId() {
@@ -88,5 +89,6 @@ public class StatisticPerConclusion {
         this.creatorId = creatorId;
     }
 
-
+    public UUID getStudentUuid() { return studentUuid; }
+    public void setStudentUuid(UUID studentUuid) { this.studentUuid = studentUuid; }
 }

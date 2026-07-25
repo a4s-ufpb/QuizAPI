@@ -8,6 +8,7 @@ import java.util.UUID;
 public record StatisticResponse(
          Long id,
          UUID creatorId,
+         UUID studentUuid,
          String studentName,
          String themeName,
          Double percentagemOfHits,

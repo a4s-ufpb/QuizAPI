@@ -5,8 +5,12 @@ import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeUpdate;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeResponse;
 import br.ufpb.dcx.apps4society.quizapi.entity.Material;
+import br.ufpb.dcx.apps4society.quizapi.entity.Tag;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
+import br.ufpb.dcx.apps4society.quizapi.entity.ThemeLike;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
+import br.ufpb.dcx.apps4society.quizapi.repository.TagRepository;
+import br.ufpb.dcx.apps4society.quizapi.repository.ThemeLikeRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ImageSizeLimitExceededException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeAlreadyExistsException;
@@ -20,13 +24,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class ThemeService {
@@ -34,15 +40,22 @@ public class ThemeService {
     private static final String THEME_IMAGE_PREFIX = "themes/";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private ThemeRepository repository;
-    private UserService userService;
-    private ImageStorageService imageStorageService;
+    private final ThemeRepository repository;
+    private final UserService userService;
+    private final ImageStorageService imageStorageService;
+    private final TagRepository tagRepository;
+    private final ThemeLikeRepository themeLikeRepository;
 
     @Autowired
-    public ThemeService(ThemeRepository repository, UserService userService, ImageStorageService imageStorageService) {
+    public ThemeService(ThemeRepository repository, UserService userService,
+                        ImageStorageService imageStorageService,
+                        TagRepository tagRepository,
+                        ThemeLikeRepository themeLikeRepository) {
         this.repository = repository;
         this.userService = userService;
         this.imageStorageService = imageStorageService;
+        this.tagRepository = tagRepository;
+        this.themeLikeRepository = themeLikeRepository;
     }
 
     @CacheEvict(value = "themes", allEntries = true)
@@ -60,15 +73,16 @@ public class ThemeService {
 
         Theme saveTheme = new Theme(themeRequest.name(), imageUrl, themeRequest.description(), user);
         applyMaterials(saveTheme, themeRequest.materialsOrEmpty());
+        applyTags(saveTheme, themeRequest.tagIdsOrEmpty(), user);
         user.addTheme(saveTheme);
 
         repository.save(saveTheme);
         log.info("tema criado: '{}' por {}", saveTheme.getName(), user.getEmail());
-        return saveTheme.entityToResponse();
+        return toResponse(saveTheme, user.getUuid());
     }
 
     @CacheEvict(value = "themes", allEntries = true)
-    public ThemeResponse insertThemeMultipart(String name, String description, String materialsJson,
+    public ThemeResponse insertThemeMultipart(String name, String description, String materialsJson, String tagIdsJson,
                                                MultipartFile imageFile, String imageUrl, String token)
             throws ThemeAlreadyExistsException {
         Theme existing = repository.findByNameIgnoreCase(name);
@@ -88,16 +102,18 @@ public class ThemeService {
         }
 
         List<MaterialRequest> materials = parseMaterials(materialsJson);
+        List<Long> tagIds = parseTagIds(tagIdsJson);
         Theme saveTheme = new Theme(name, finalImageUrl, description, user);
         applyMaterials(saveTheme, materials);
+        applyTags(saveTheme, tagIds, user);
         user.addTheme(saveTheme);
         repository.save(saveTheme);
         log.info("tema criado (multipart): '{}' por {}", name, user.getEmail());
-        return saveTheme.entityToResponse();
+        return toResponse(saveTheme, user.getUuid());
     }
 
     @CacheEvict(value = "themes", allEntries = true)
-    public ThemeResponse updateThemeMultipart(Long id, String name, String description, String materialsJson,
+    public ThemeResponse updateThemeMultipart(Long id, String name, String description, String materialsJson, String tagIdsJson,
                                                MultipartFile imageFile, String imageUrl, String token)
             throws UserNotHavePermissionException, ThemeAlreadyExistsException {
         User user = userService.findUserByToken(token);
@@ -124,13 +140,15 @@ public class ThemeService {
         }
 
         List<MaterialRequest> materials = parseMaterials(materialsJson);
+        List<Long> tagIds = parseTagIds(tagIdsJson);
         theme.setName(name);
         theme.setImageUrl(finalImageUrl);
         theme.setDescription(description);
         applyMaterials(theme, materials);
+        applyTags(theme, tagIds, theme.getCreator());
         repository.save(theme);
         log.info("tema atualizado (multipart): id={} '{}' por {}", id, name, user.getEmail());
-        return theme.entityToResponse();
+        return toResponse(theme, user.getUuid());
     }
 
     private List<MaterialRequest> parseMaterials(String json) {
@@ -142,7 +160,15 @@ public class ThemeService {
         }
     }
 
-    /** Substitui os materiais do tema pelos informados na requisição. */
+    private List<Long> parseTagIds(String json) {
+        if (json == null || json.isBlank() || json.equals("[]")) return List.of();
+        try {
+            return OBJECT_MAPPER.readValue(json, new TypeReference<List<Long>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
     private void applyMaterials(Theme theme, List<MaterialRequest> materials) {
         List<Material> mapped = materials.stream()
                 .map(m -> new Material(m.name(), m.link(), m.type(), theme))
@@ -150,8 +176,18 @@ public class ThemeService {
         theme.replaceMaterials(mapped);
     }
 
-    // URL já armazenada (edição sem trocar a imagem) não conta pro limite —
-    // só payload base64 novo passa por aqui de fato.
+    private void applyTags(Theme theme, List<Long> tagIds, User owner) {
+        if (tagIds == null) tagIds = List.of();
+        List<Tag> tags = tagIds.isEmpty() ? List.of() : tagRepository.findByIdIn(tagIds);
+        Set<Tag> filtered = new HashSet<>();
+        for (Tag t : tags) {
+            if (t.getCreator().getUuid().equals(owner.getUuid())) {
+                filtered.add(t);
+            }
+        }
+        theme.setTags(filtered);
+    }
+
     private void validateImage(String imageBase64OrUrl) throws ImageSizeLimitExceededException {
         boolean isStoredUrl = imageBase64OrUrl != null
                 && (imageBase64OrUrl.startsWith("http://") || imageBase64OrUrl.startsWith("https://"));
@@ -177,13 +213,13 @@ public class ThemeService {
         log.info("tema removido: id={} '{}' por {}", id, theme.getName(), user.getEmail());
     }
 
-    // Temas são lidos com muito mais frequência do que escritos; cacheado por
-    // (página, tamanho, nome) com TTL curto (ver spring.cache.caffeine.spec).
-    @Cacheable(value = "themes", key = "'all:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #name")
-    public Page<ThemeResponse> findAllThemes(Pageable pageable, String name){
+    public Page<ThemeResponse> findAllThemes(Pageable pageable, String name, List<Long> tagIds, String token) {
         Page<Theme> themes;
 
-        if (name.isBlank()){
+        boolean filterTags = tagIds != null && !tagIds.isEmpty();
+        if (filterTags) {
+            themes = repository.findByTagIds(tagIds, name == null ? "" : name, pageable);
+        } else if (name == null || name.isBlank()) {
             themes = repository.findAll(pageable);
         } else {
             themes = repository.findByNameStartsWithIgnoreCase(name, pageable);
@@ -193,19 +229,31 @@ public class ThemeService {
             throw new ThemeNotFoundException("Nenhum tema foi cadastrado");
         }
 
-        return themes.map(Theme::entityToResponse);
+        UUID viewerUuid = safeViewer(token);
+        return themes.map(t -> toResponse(t, viewerUuid));
+    }
+
+    private UUID safeViewer(String token) {
+        if (token == null || token.isBlank()) return null;
+        try { return userService.findUserByToken(token).getUuid(); }
+        catch (Exception e) { return null; }
     }
 
     public ThemeResponse findThemeById(Long id){
-        return repository.findById(id)
-                .orElseThrow(() -> new ThemeNotFoundException(Messages.THEME_NOT_FOUND))
-                .entityToResponse();
+        Theme t = repository.findById(id)
+                .orElseThrow(() -> new ThemeNotFoundException(Messages.THEME_NOT_FOUND));
+        return toResponse(t, null);
     }
 
-    @Cacheable(value = "themes", key = "'creator:' + #token + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #name")
+    public ThemeResponse findThemeById(Long id, String token) {
+        Theme t = repository.findById(id)
+                .orElseThrow(() -> new ThemeNotFoundException(Messages.THEME_NOT_FOUND));
+        return toResponse(t, safeViewer(token));
+    }
+
     public Page<ThemeResponse> findThemesByCreator(String token, String name, Pageable pageable){
         User creator = userService.findUserByToken(token);
-        Page<Theme> themes = null;
+        Page<Theme> themes;
 
         if (name.isBlank()){
             themes = repository.findByCreator(creator, pageable);
@@ -217,7 +265,8 @@ public class ThemeService {
             throw new ThemeNotFoundException("Nenhum Tema encontrado");
         }
 
-        return themes.map(Theme::entityToResponse);
+        UUID viewerUuid = creator.getUuid();
+        return themes.map(t -> toResponse(t, viewerUuid));
     }
 
     @CacheEvict(value = "themes", allEntries = true)
@@ -243,7 +292,7 @@ public class ThemeService {
         updateData(theme, themeUpdate, imageUrl);
         repository.save(theme);
         log.info("tema atualizado: id={} '{}' por {}", id, themeUpdate.name(), user.getEmail());
-        return theme.entityToResponse();
+        return toResponse(theme, user.getUuid());
     }
 
     private void updateData(Theme theme, ThemeUpdate themeUpdate, String imageUrl){
@@ -251,5 +300,34 @@ public class ThemeService {
         theme.setImageUrl(imageUrl);
         theme.setDescription(themeUpdate.description());
         applyMaterials(theme, themeUpdate.materialsOrEmpty());
+        applyTags(theme, themeUpdate.tagIdsOrEmpty(), theme.getCreator());
+    }
+
+    // === Likes ===
+    @CacheEvict(value = "themes", allEntries = true)
+    public ThemeResponse likeTheme(Long themeId, String token) {
+        User user = userService.findUserByToken(token);
+        Theme theme = repository.findById(themeId)
+                .orElseThrow(() -> new ThemeNotFoundException(Messages.THEME_NOT_FOUND));
+        if (!themeLikeRepository.existsByUser_UuidAndTheme_Id(user.getUuid(), themeId)) {
+            themeLikeRepository.save(new ThemeLike(user, theme));
+        }
+        return toResponse(theme, user.getUuid());
+    }
+
+    @CacheEvict(value = "themes", allEntries = true)
+    public ThemeResponse unlikeTheme(Long themeId, String token) {
+        User user = userService.findUserByToken(token);
+        Theme theme = repository.findById(themeId)
+                .orElseThrow(() -> new ThemeNotFoundException(Messages.THEME_NOT_FOUND));
+        themeLikeRepository.findByUser_UuidAndTheme_Id(user.getUuid(), themeId)
+                .ifPresent(themeLikeRepository::delete);
+        return toResponse(theme, user.getUuid());
+    }
+
+    private ThemeResponse toResponse(Theme theme, UUID viewerUuid) {
+        long count = themeLikeRepository.countByTheme_Id(theme.getId());
+        boolean liked = viewerUuid != null && themeLikeRepository.existsByUser_UuidAndTheme_Id(viewerUuid, theme.getId());
+        return theme.entityToResponse(count, liked);
     }
 }

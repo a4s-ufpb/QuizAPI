@@ -10,21 +10,24 @@ public record ThemeUpdate(
         @NotBlank(message = "Campo tema não pode ser vazio")
         @Size(min = 3, max = 70, message = "Número de caracteres inválido")
         String name,
-        // Aceita tanto uma URL já hospedada quanto uma imagem em base64
-        // (upload novo, convertido pra webp e enviado ao MinIO no service).
         String imageUrl,
-        /** Conteúdos abordados pelo tema (texto livre, opcional). */
         String description,
-        /** Materiais de apoio (substituem os existentes ao salvar). */
         @Valid
-        List<MaterialRequest> materials) {
+        List<MaterialRequest> materials,
+        List<Long> tagIds) {
 
-    // Compat: atualização simples só com nome + imagem.
     public ThemeUpdate(String name, String imageUrl) {
-        this(name, imageUrl, null, List.of());
+        this(name, imageUrl, null, List.of(), List.of());
+    }
+
+    public ThemeUpdate(String name, String imageUrl, String description, List<MaterialRequest> materials) {
+        this(name, imageUrl, description, materials, List.of());
     }
 
     public List<MaterialRequest> materialsOrEmpty() {
         return materials != null ? materials : List.of();
+    }
+    public List<Long> tagIdsOrEmpty() {
+        return tagIds != null ? tagIds : List.of();
     }
 }

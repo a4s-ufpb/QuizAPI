@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity(name = "tb_theme")
 @Table(indexes = {
@@ -34,6 +36,12 @@ public class Theme implements Serializable {
     @OneToMany(mappedBy = "theme", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Material> materials = new ArrayList<>();
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "tb_theme_tag",
+            joinColumns = @JoinColumn(name = "theme_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    private Set<Tag> tags = new HashSet<>();
+
     public Theme(){
 
     }
@@ -59,7 +67,16 @@ public class Theme implements Serializable {
 
     public ThemeResponse entityToResponse(){
         return new ThemeResponse(id, name, imageUrl, description,
-                materials.stream().map(Material::entityToResponse).toList());
+                materials.stream().map(Material::entityToResponse).toList(),
+                tags.stream().map(Tag::entityToResponse).toList(),
+                0L, false);
+    }
+
+    public ThemeResponse entityToResponse(long likeCount, boolean likedByMe){
+        return new ThemeResponse(id, name, imageUrl, description,
+                materials.stream().map(Material::entityToResponse).toList(),
+                tags.stream().map(Tag::entityToResponse).toList(),
+                likeCount, likedByMe);
     }
 
     public void addQuestion(Question question){
@@ -118,6 +135,9 @@ public class Theme implements Serializable {
     public List<Material> getMaterials() {
         return materials;
     }
+
+    public Set<Tag> getTags() { return tags; }
+    public void setTags(Set<Tag> tags) { this.tags = tags; }
 
     /** Substitui todos os materiais do tema mantendo o vínculo bidirecional. */
     public void replaceMaterials(List<Material> newMaterials) {

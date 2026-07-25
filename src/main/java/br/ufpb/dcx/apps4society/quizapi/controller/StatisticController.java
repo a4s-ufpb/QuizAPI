@@ -39,8 +39,9 @@ public class StatisticController {
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
     } )
     @PostMapping
-    public ResponseEntity<StatisticResponse> insertStatistic(@RequestBody @Valid StatisticRequest statisticRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(statisticService.insertStatistic(statisticRequest));
+    public ResponseEntity<StatisticResponse> insertStatistic(@RequestBody @Valid StatisticRequest statisticRequest,
+                                                             @RequestHeader(value = "X-Student-Uuid", required = false) UUID studentUuid) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(statisticService.insertStatistic(statisticRequest, studentUuid));
     }
 
     @Operation(tags = "Statistic", summary = "Find Statistics By Creator", responses ={

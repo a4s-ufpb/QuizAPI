@@ -26,6 +26,8 @@ public class Question implements Serializable {
     private String imageOneUrl;
     private String imageTwoUrl;
     private String imagesOrder;
+    @Column(columnDefinition = "TEXT")
+    private String explanation;
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Theme theme;
     @ManyToOne(cascade = CascadeType.PERSIST)
@@ -45,6 +47,7 @@ public class Question implements Serializable {
         this.imageOneUrl = imageOneUrl;
         this.imageTwoUrl = imageTwoUrl;
         this.imagesOrder = questionRequest.imagesOrder();
+        this.explanation = questionRequest.explanation();
         this.theme = theme;
         this.creator = creator;
     }
@@ -58,7 +61,7 @@ public class Question implements Serializable {
     }
 
     public QuestionResponse entityToResponse(){
-        return new QuestionResponse(id,title,imageUrl,imageOneUrl,imageTwoUrl,imagesOrder, creator.getUuid(),theme.entityToResponse(),
+        return new QuestionResponse(id,title,imageUrl,imageOneUrl,imageTwoUrl,imagesOrder, explanation, creator.getUuid(),theme.entityToResponse(),
                 alternatives.stream().map(Alternative::entityToResponse).toList());
     }
 
@@ -67,9 +70,12 @@ public class Question implements Serializable {
     }
 
     public QuestionQuizResponse entityToQuizResponse(){
-        return new QuestionQuizResponse(id, title, imageUrl, imageOneUrl, imageTwoUrl, imagesOrder,
+        return new QuestionQuizResponse(id, title, imageUrl, imageOneUrl, imageTwoUrl, imagesOrder, explanation,
                 alternatives.stream().map(Alternative::entityToResponse).toList());
     }
+
+    public String getExplanation() { return explanation; }
+    public void setExplanation(String explanation) { this.explanation = explanation; }
 
     public void addAlternative(Alternative alternative) {
         this.alternatives.add(alternative);

@@ -59,11 +59,12 @@ public class QuestionController {
             @RequestParam(required = false) String imageOneUrl,
             @RequestParam(required = false) String imageTwoUrl,
             @RequestParam(required = false) String imagesOrder,
+            @RequestParam(required = false) String explanation,
             @RequestParam(name = "imageFile1", required = false) MultipartFile imageFile1,
             @RequestParam(name = "imageFile2", required = false) MultipartFile imageFile2,
             @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.insertQuestionMultipart(title, imageUrl, imageOneUrl, imageTwoUrl, imagesOrder,
+                .body(service.insertQuestionMultipart(title, imageUrl, imageOneUrl, imageTwoUrl, imagesOrder, explanation,
                         imageFile1, imageFile2, idTheme, token));
     }
 
@@ -111,11 +112,12 @@ public class QuestionController {
             @RequestParam(required = false) String imageOneUrl,
             @RequestParam(required = false) String imageTwoUrl,
             @RequestParam(required = false) String imagesOrder,
+            @RequestParam(required = false) String explanation,
             @RequestParam(name = "imageFile1", required = false) MultipartFile imageFile1,
             @RequestParam(name = "imageFile2", required = false) MultipartFile imageFile2,
             @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
         return ResponseEntity.ok(service.updateQuestionMultipart(id, title, imageUrl, imageOneUrl, imageTwoUrl,
-                imagesOrder, imageFile1, imageFile2, token));
+                imagesOrder, explanation, imageFile1, imageFile2, token));
     }
 
     @Operation(tags = "Question", summary = "Find 10 Questions by Theme", responses ={

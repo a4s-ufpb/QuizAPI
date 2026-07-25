@@ -25,6 +25,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/v1/theme")
 @Tag(name = "Theme", description = "Themes of Questions")
@@ -36,12 +38,6 @@ public class ThemeController {
         this.service = service;
     }
 
-    @Operation(tags = "Theme", summary = "Insert Theme", responses ={
-            @ApiResponse(description = "Success", responseCode = "201", content = @Content(schema = @Schema(implementation = ThemeResponse.class))),
-            @ApiResponse(description = "Bad Request", responseCode = "400", content = @Content()),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
-    } )
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ThemeResponse> insertTheme(@RequestBody @Valid ThemeRequest themeRequest, @RequestHeader("Authorization") String token) throws ThemeAlreadyExistsException, ImageSizeLimitExceededException {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.insertTheme(themeRequest, token));
@@ -53,43 +49,29 @@ public class ThemeController {
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String imageUrl,
             @RequestParam(required = false) String materials,
+            @RequestParam(required = false) String tagIds,
             @RequestParam(name = "imageFile", required = false) MultipartFile imageFile,
             @RequestHeader("Authorization") String token) throws ThemeAlreadyExistsException {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.insertThemeMultipart(name, description, materials, imageFile, imageUrl, token));
+                .body(service.insertThemeMultipart(name, description, materials, tagIds, imageFile, imageUrl, token));
     }
 
-    @Operation(tags = "Theme", summary = "Remove Theme", responses ={
-            @ApiResponse(description = "No Content", responseCode = "204", content = @Content()),
-            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
-    } )
     @DeleteMapping(value = "/{id}")
     public ResponseEntity<Void> removeTheme(@PathVariable Long id, @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {
         service.removeTheme(id, token);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(tags = "Theme", summary = "Find All Themes", responses ={
-            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ThemeResponse.class)))),
-            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-    })
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Page<ThemeResponse>> findAllThemes(@RequestParam(value = "page", defaultValue = "0") Integer page,
                                                              @RequestParam(value = "size", defaultValue = "12") Integer size,
-                                                             @RequestParam(value = "name", defaultValue = "") String name){
+                                                             @RequestParam(value = "name", defaultValue = "") String name,
+                                                             @RequestParam(value = "tagIds", required = false) List<Long> tagIds,
+                                                             @RequestHeader(value = "Authorization", required = false) String token){
         Pageable pageable = PageRequest.of(page,size);
-        return ResponseEntity.ok(service.findAllThemes(pageable, name));
+        return ResponseEntity.ok(service.findAllThemes(pageable, name, tagIds, token));
     }
 
-    @Operation(tags = "Theme", summary = "Find Themes By Creator", responses ={
-            @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ThemeResponse.class)))),
-            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-            @ApiResponse(description = "Forbidden", responseCode = "403", content = @Content()),
-    })
     @GetMapping(value = "/creator", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Page<ThemeResponse>> findThemesByCreator(@RequestParam(value = "page", defaultValue = "0") Integer page,
                                                                    @RequestParam(value = "size", defaultValue = "12") Integer size,
@@ -101,23 +83,12 @@ public class ThemeController {
         return ResponseEntity.ok(service.findThemesByCreator(token, name, pageable));
     }
 
-    @Operation(tags = "Theme", summary = "Find Theme", responses ={
-            @ApiResponse(description = "Success", responseCode = "200", content = @Content(schema = @Schema(implementation = ThemeResponse.class))),
-            @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-    })
     @GetMapping(value = "/{id}",produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ThemeResponse> findThemeById(@PathVariable Long id){
-        return ResponseEntity.ok(service.findThemeById(id));
+    public ResponseEntity<ThemeResponse> findThemeById(@PathVariable Long id,
+                                                       @RequestHeader(value = "Authorization", required = false) String token){
+        return ResponseEntity.ok(service.findThemeById(id, token));
     }
 
-    @Operation(tags = "Theme", summary = "Update Theme", responses ={
-            @ApiResponse(description = "Success", responseCode = "200", content = @Content(schema = @Schema(implementation = ThemeResponse.class))),
-            @ApiResponse(description = "not Found", responseCode = "404", content = @Content()),
-            @ApiResponse(description = "Bad Request", responseCode = "400", content = @Content()),
-            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
-            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
-    } )
     @PatchMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ThemeResponse> updateTheme(@PathVariable Long id,
                                                      @RequestBody @Valid ThemeUpdate themeUpdate,
@@ -132,9 +103,20 @@ public class ThemeController {
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String imageUrl,
             @RequestParam(required = false) String materials,
+            @RequestParam(required = false) String tagIds,
             @RequestParam(name = "imageFile", required = false) MultipartFile imageFile,
             @RequestHeader("Authorization") String token) throws UserNotHavePermissionException, ThemeAlreadyExistsException {
-        return ResponseEntity.ok(service.updateThemeMultipart(id, name, description, materials, imageFile, imageUrl, token));
+        return ResponseEntity.ok(service.updateThemeMultipart(id, name, description, materials, tagIds, imageFile, imageUrl, token));
     }
 
+    // === Likes ===
+    @PostMapping("/{id}/like")
+    public ResponseEntity<ThemeResponse> like(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(service.likeTheme(id, token));
+    }
+
+    @DeleteMapping("/{id}/like")
+    public ResponseEntity<ThemeResponse> unlike(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(service.unlikeTheme(id, token));
+    }
 }

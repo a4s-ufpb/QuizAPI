@@ -70,7 +70,7 @@ public class QuestionService {
     }
 
     public QuestionResponse insertQuestionMultipart(String title, String imageUrl, String imageOneUrl,
-                                                     String imageTwoUrl, String imagesOrder,
+                                                     String imageTwoUrl, String imagesOrder, String explanation,
                                                      MultipartFile imageFile1, MultipartFile imageFile2,
                                                      Long idTheme, String token) throws UserNotHavePermissionException {
         User creator = userService.findUserByToken(token);
@@ -85,7 +85,7 @@ public class QuestionService {
         String finalImageOneUrl = resolveImageUrl(imageFile1, imageOneUrl, "questions/");
         String finalImageTwoUrl = resolveImageUrl(imageFile2, imageTwoUrl, "questions/");
 
-        QuestionRequest req = new QuestionRequest(title, imageUrl, null, null, imagesOrder);
+        QuestionRequest req = new QuestionRequest(title, imageUrl, null, null, imagesOrder, explanation);
         Question question = new Question(req, theme, creator, finalImageOneUrl, finalImageTwoUrl);
         theme.addQuestion(question);
         creator.addQuestion(question);
@@ -96,7 +96,7 @@ public class QuestionService {
     }
 
     public QuestionResponse updateQuestionMultipart(Long id, String title, String imageUrl, String imageOneUrl,
-                                                     String imageTwoUrl, String imagesOrder,
+                                                     String imageTwoUrl, String imagesOrder, String explanation,
                                                      MultipartFile imageFile1, MultipartFile imageFile2,
                                                      String token) throws UserNotHavePermissionException {
         User user = userService.findUserByToken(token);
@@ -116,6 +116,7 @@ public class QuestionService {
         question.setImageOneUrl(finalImageOneUrl);
         question.setImageTwoUrl(finalImageTwoUrl);
         question.setImagesOrder(imagesOrder);
+        question.setExplanation(explanation);
         questionRepository.save(question);
         log.info("questão atualizada (multipart): id={} '{}' por {}", id, title, user.getEmail());
         return question.entityToResponse();
@@ -248,6 +249,7 @@ public class QuestionService {
         question.setImageOneUrl(imageOneUrl);
         question.setImageTwoUrl(imageTwoUrl);
         question.setImagesOrder(questionUpdate.imagesOrder());
+        question.setExplanation(questionUpdate.explanation());
     }
 
     // URLs já armazenadas (edição sem trocar imagem) não contam pro limite de

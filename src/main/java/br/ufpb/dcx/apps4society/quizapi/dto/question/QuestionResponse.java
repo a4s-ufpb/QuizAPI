@@ -13,6 +13,7 @@ public record QuestionResponse(
          String imageOneUrl,
          String imageTwoUrl,
          String imagesOrder,
+         String explanation,
          UUID creatorId,
          ThemeResponse theme,
          List<AlternativeResponse> alternatives) {

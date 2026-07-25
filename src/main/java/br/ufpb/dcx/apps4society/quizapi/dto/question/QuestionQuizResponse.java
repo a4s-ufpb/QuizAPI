@@ -15,6 +15,7 @@ public record QuestionQuizResponse(
         String imageOneUrl,
         String imageTwoUrl,
         String imagesOrder,
+        String explanation,
         List<AlternativeResponse> alternatives
 ) {
 }

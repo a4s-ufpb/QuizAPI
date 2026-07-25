@@ -31,6 +31,10 @@ public class StatisticService {
         this.userRepository = userRepository;
     }
 
+    public StatisticPerConclusion getById(Long id) {
+        return statisticRepository.findById(id).orElse(null);
+    }
+
     /** ADMIN enxerga estatísticas (e listas de filtros) de todos os criadores. */
     private boolean isAdmin(UUID userId) {
         return userRepository.findById(userId)
@@ -39,6 +43,10 @@ public class StatisticService {
     }
 
     public StatisticResponse insertStatistic(StatisticRequest statisticRequest) {
+        return insertStatistic(statisticRequest, null);
+    }
+
+    public StatisticResponse insertStatistic(StatisticRequest statisticRequest, UUID studentUuid) {
         Theme theme = themeRepository.findByNameIgnoreCase(statisticRequest.themeName());
 
         if (theme == null) {
@@ -48,6 +56,7 @@ public class StatisticService {
         UUID creatorId = theme.getCreator().getUuid();
         StatisticPerConclusion statistic = new StatisticPerConclusion(statisticRequest);
         statistic.setCreatorId(creatorId);
+        statistic.setStudentUuid(studentUuid);
 
         statisticRepository.save(statistic);
 
