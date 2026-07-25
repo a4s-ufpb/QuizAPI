@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -58,7 +59,8 @@ public class StatisticController {
                                                                              @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
                                                                              @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
                                                                              @PathVariable UUID creatorId) {
-        Pageable pageable = PageRequest.of(page, size);
+        // Ordena da conclusão mais recente para a mais antiga por padrão.
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date", "id"));
         return ResponseEntity.ok(statisticService.findAllStatisticsByCreator(pageable, creatorId, studentName, themeName, startDate, endDate));
     }
 

@@ -39,6 +39,11 @@ public class TagController {
         return ResponseEntity.ok(service.listByCreator(uuid));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<TagResponse>> all() {
+        return ResponseEntity.ok(service.listAll());
+    }
+
     @PatchMapping("/{id}")
     public ResponseEntity<TagResponse> update(@PathVariable Long id, @RequestBody @Valid TagRequest req,
                                               @RequestHeader("Authorization") String token) throws UserNotHavePermissionException {

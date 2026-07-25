@@ -68,8 +68,8 @@ public interface StatisticRepository extends JpaRepository<StatisticPerConclusio
     @Query("SELECT s FROM tb_statistic s WHERE s.creatorId = :creatorId " +
             "AND (:studentName = '' OR s.studentName = :studentName) " +
             "AND (:themeName = '' OR s.themeName = :themeName) " +
-            "AND (:startDate IS NULL OR s.date >= :startDate) " +
-            "AND (:endDate IS NULL OR s.date <= :endDate)")
+            "AND (cast(:startDate as date) IS NULL OR s.date >= :startDate) " +
+            "AND (cast(:endDate as date) IS NULL OR s.date <= :endDate)")
     Page<StatisticPerConclusion> findByCreatorIdAndFilters(Pageable pageable,
                                                            @Param("creatorId") UUID creatorId,
                                                            @Param("studentName") String studentName,
@@ -80,8 +80,8 @@ public interface StatisticRepository extends JpaRepository<StatisticPerConclusio
     // Mesma busca sem restrição de criador — usada pelo ADMIN, que enxerga todas as estatísticas
     @Query("SELECT s FROM tb_statistic s WHERE (:studentName = '' OR s.studentName = :studentName) " +
             "AND (:themeName = '' OR s.themeName = :themeName) " +
-            "AND (:startDate IS NULL OR s.date >= :startDate) " +
-            "AND (:endDate IS NULL OR s.date <= :endDate)")
+            "AND (cast(:startDate as date) IS NULL OR s.date >= :startDate) " +
+            "AND (cast(:endDate as date) IS NULL OR s.date <= :endDate)")
     Page<StatisticPerConclusion> findByFiltersForAdmin(Pageable pageable,
                                                        @Param("studentName") String studentName,
                                                        @Param("themeName") String themeName,
@@ -91,8 +91,8 @@ public interface StatisticRepository extends JpaRepository<StatisticPerConclusio
     // Total de quizzes concluídos pelo próprio usuário (como aluno), com filtros opcionais
     @Query("SELECT COUNT(s) FROM tb_statistic s WHERE s.studentName = :studentName " +
             "AND (:themeName = '' OR s.themeName = :themeName) " +
-            "AND (:startDate IS NULL OR s.date >= :startDate) " +
-            "AND (:endDate IS NULL OR s.date <= :endDate)")
+            "AND (cast(:startDate as date) IS NULL OR s.date >= :startDate) " +
+            "AND (cast(:endDate as date) IS NULL OR s.date <= :endDate)")
     long countByStudentNameAndFilters(@Param("studentName") String studentName,
                                        @Param("themeName") String themeName,
                                        @Param("startDate") LocalDate startDate,

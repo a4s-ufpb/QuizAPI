@@ -40,6 +40,13 @@ public class TagService {
         return repository.findByCreator_UuidOrderByNameAsc(creatorUuid).stream().map(Tag::entityToResponse).toList();
     }
 
+    public List<TagResponse> listAll() {
+        return repository.findAll().stream()
+                .sorted((a, b) -> a.getName().compareToIgnoreCase(b.getName()))
+                .map(Tag::entityToResponse)
+                .toList();
+    }
+
     public TagResponse update(Long id, TagRequest req, String token) throws UserNotHavePermissionException {
         User user = userService.findUserByToken(token);
         Tag tag = repository.findById(id).orElseThrow(() -> new RuntimeException("Tag não encontrada"));

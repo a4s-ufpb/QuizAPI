@@ -20,8 +20,8 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
     @Query("SELECT r FROM tb_response r WHERE r.user = :user " +
             "AND r.gameMode = :gameMode " +
             "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
-            "AND (:startDate IS NULL OR r.dateTime >= :startDate) " +
-            "AND (:endDate IS NULL OR r.dateTime <= :endDate)")
+            "AND (cast(:startDate as date) IS NULL OR r.dateTime >= :startDate) " +
+            "AND (cast(:endDate as date) IS NULL OR r.dateTime <= :endDate)")
     Page<Response> findByUserAndFilters(Pageable pageable, @Param("user") User user,
                                          @Param("themeName") String themeName,
                                          @Param("startDate") LocalDate startDate,
@@ -31,8 +31,8 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
     @Query("SELECT COUNT(r) FROM tb_response r WHERE r.user = :user AND r.alternative.correct = :correct " +
             "AND r.gameMode = :gameMode " +
             "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
-            "AND (:startDate IS NULL OR r.dateTime >= :startDate) " +
-            "AND (:endDate IS NULL OR r.dateTime <= :endDate)")
+            "AND (cast(:startDate as date) IS NULL OR r.dateTime >= :startDate) " +
+            "AND (cast(:endDate as date) IS NULL OR r.dateTime <= :endDate)")
     long countByUserAndCorrectAndFilters(@Param("user") User user, @Param("correct") boolean correct,
                                           @Param("themeName") String themeName,
                                           @Param("startDate") LocalDate startDate,
@@ -47,8 +47,8 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
             "AND r.question.creator.uuid = :creatorUuid " +
             "AND (:name = '' OR r.user.name = :name) " +
             "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
-            "AND (:currentDate IS NULL OR r.dateTime >= :currentDate) " +
-            "AND (:finalDate IS NULL OR r.dateTime <= :finalDate)")
+            "AND (cast(:currentDate as date) IS NULL OR r.dateTime >= :currentDate) " +
+            "AND (cast(:finalDate as date) IS NULL OR r.dateTime <= :finalDate)")
     Page<Response> findByCreatorAndFilters(Pageable pageable,
                                            @Param("creatorUuid") UUID creatorUuid,
                                            @Param("name") String name,
@@ -61,8 +61,8 @@ public interface ResponseRepository extends JpaRepository<Response,Long> {
     @Query("SELECT r FROM tb_response r WHERE r.gameMode = :gameMode " +
             "AND (:name = '' OR r.user.name = :name) " +
             "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
-            "AND (:currentDate IS NULL OR r.dateTime >= :currentDate) " +
-            "AND (:finalDate IS NULL OR r.dateTime <= :finalDate)")
+            "AND (cast(:currentDate as date) IS NULL OR r.dateTime >= :currentDate) " +
+            "AND (cast(:finalDate as date) IS NULL OR r.dateTime <= :finalDate)")
     Page<Response> findByFiltersForAdmin(Pageable pageable,
                                          @Param("name") String name,
                                          @Param("themeName") String themeName,

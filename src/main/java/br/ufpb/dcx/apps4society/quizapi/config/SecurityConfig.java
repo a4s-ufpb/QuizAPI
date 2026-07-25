@@ -51,6 +51,7 @@ public class SecurityConfig {
                     request.requestMatchers(HttpMethod.GET, "/v1/theme/**").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/question/quiz/**").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/tag/creator/**").permitAll();
+                    request.requestMatchers(HttpMethod.GET, "/v1/tag/all").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/theme-feedback/theme/**").permitAll();
                     request.requestMatchers(HttpMethod.GET, "/v1/user/*/public-profile").permitAll();
                     request.requestMatchers(HttpMethod.POST, "/v1/user/register", "/v1/user/login").permitAll();

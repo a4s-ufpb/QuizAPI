@@ -5,6 +5,6 @@ import jakarta.validation.constraints.Size;
 
 public record StatisticFeedbackRequest(
         @NotBlank(message = "Feedback não pode ser vazio")
-        @Size(min = 1, max = 2000, message = "Número de caracteres inválido")
+        @Size(min = 5, max = 2000, message = "O feedback deve ter no mínimo 5 caracteres")
         String text
 ) {}
