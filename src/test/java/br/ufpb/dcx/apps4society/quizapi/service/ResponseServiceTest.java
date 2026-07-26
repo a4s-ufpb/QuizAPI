@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 class ResponseServiceTest {
@@ -65,13 +67,15 @@ class ResponseServiceTest {
         Mockito.lenient().when(userRepository.findById(user.getUuid())).thenReturn(Optional.of(user));
         Mockito.lenient().when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
         Mockito.lenient().when(alternativeRepository.findById(alternative.getId())).thenReturn(Optional.of(alternative));
+        doAnswer(invocation -> {
+            org.springframework.test.util.ReflectionTestUtils.setField(
+                    (Response) invocation.getArgument(0), "id", 1L);
+            return null;
+        }).when(responseRepository).save(any(Response.class));
 
-        ResponseDTO result = responseService.insertResponse(user.getUuid(), question.getId(), alternative.getId());
+        Long result = responseService.insertResponse(user.getUuid(), question.getId(), alternative.getId());
 
         assertNotNull(result);
-        assertNotNull(result.user());
-        assertNotNull(result.question());
-        assertNotNull(result.alternative());
     }
 
     @Test

@@ -1,8 +1,5 @@
 package br.ufpb.dcx.apps4society.quizapi.util;
 
-import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.util.UUID;
 
 import static io.restassured.RestAssured.*;
@@ -10,14 +7,7 @@ import static io.restassured.RestAssured.*;
 public class ResponseRequestUtil {
     public static final String BASE_PATH_RESPONSE = "/response";
 
-    @BeforeEach
-    void setUp(){
-        port = 8080;
-        baseURI = "http://localhost";
-        basePath = "/api/v1";
-    }
-
-    public static ResponseDTO post(UUID userId, Long questionId, Long alternativeId, String token){
+    public static Long post(UUID userId, Long questionId, Long alternativeId, String token){
         return given()
                 .header("Authorization", "Bearer " + token)
                 .when()
@@ -25,7 +15,7 @@ public class ResponseRequestUtil {
                 .then()
                 .statusCode(201)
                 .extract()
-                .as(ResponseDTO.class);
+                .as(Long.class);
     }
 
     public static void delete(Long idResponse, String token){

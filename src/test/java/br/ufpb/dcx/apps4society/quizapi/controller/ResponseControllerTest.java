@@ -5,7 +5,6 @@ import br.ufpb.dcx.apps4society.quizapi.dto.alternative.AlternativeRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.alternative.AlternativeResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.question.QuestionResponse;
-import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.theme.ThemeResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.user.UserLogin;
@@ -43,21 +42,16 @@ class ResponseControllerTest extends QuizApplicationTests {
         AlternativeRequest alternativeRequest = mockAlternative.mockRequest(1);
         AlternativeResponse alternativeResponse = AlternativeRequestUtil.post(alternativeRequest, token, questionResponse.id());
 
-        ResponseDTO responseDTO = given()
+        Long responseId = given()
                 .header("Authorization", "Bearer " + token)
                 .when()
                 .post(baseURI+":"+port+basePath+ BASE_PATH_RESPONSE+"/"+userResponse.uuid()+"/"+questionResponse.id()+"/"+alternativeResponse.id())
                 .then()
                 .statusCode(201)
                 .extract()
-                .as(ResponseDTO.class);
+                .as(Long.class);
 
-        assertNotNull(responseDTO);
-        assertNotNull(responseDTO.id());
-        assertNotNull(responseDTO.user());
-        assertNotNull(responseDTO.question());
-        assertNotNull(responseDTO.alternative());
-        assertNotNull(responseDTO.dateTime());
+        assertNotNull(responseId);
 
         QuestionRequestUtil.delete(questionResponse.id(), token);
         ThemeRequestUtil.delete(themeResponse.id(), token);
@@ -170,12 +164,12 @@ class ResponseControllerTest extends QuizApplicationTests {
         AlternativeRequest alternativeRequest = mockAlternative.mockRequest(1);
         AlternativeResponse alternativeResponse = AlternativeRequestUtil.post(alternativeRequest, token, questionResponse.id());
 
-        ResponseDTO responseDTO = ResponseRequestUtil.post(userResponse.uuid(),questionResponse.id(), alternativeResponse.id(), token);
+        Long responseId = ResponseRequestUtil.post(userResponse.uuid(), questionResponse.id(), alternativeResponse.id(), token);
 
         given()
                 .header("Authorization", "Bearer " + token)
                 .when()
-                .delete(baseURI+":"+port+basePath+BASE_PATH_RESPONSE+"/"+responseDTO.id())
+                .delete(baseURI+":"+port+basePath+BASE_PATH_RESPONSE+"/"+responseId)
                 .then()
                 .statusCode(204)
                 .extract()
@@ -234,12 +228,12 @@ class ResponseControllerTest extends QuizApplicationTests {
         AlternativeRequest alternativeRequest = mockAlternative.mockRequest(1);
         AlternativeResponse alternativeResponse = AlternativeRequestUtil.post(alternativeRequest, token, questionResponse.id());
 
-        ResponseDTO responseDTO = ResponseRequestUtil.post(userResponse.uuid(),questionResponse.id(), alternativeResponse.id(), token);
+        Long responseId = ResponseRequestUtil.post(userResponse.uuid(), questionResponse.id(), alternativeResponse.id(), token);
 
         given()
                 .header("Authorization", "Bearer " + INVALID_TOKEN)
                 .when()
-                .delete(baseURI+":"+port+basePath+BASE_PATH_RESPONSE+"/"+responseDTO.id())
+                .delete(baseURI+":"+port+basePath+BASE_PATH_RESPONSE+"/"+responseId)
                 .then()
                 .statusCode(403)
                 .extract()
@@ -270,12 +264,12 @@ class ResponseControllerTest extends QuizApplicationTests {
         AlternativeRequest alternativeRequest = mockAlternative.mockRequest(1);
         AlternativeResponse alternativeResponse = AlternativeRequestUtil.post(alternativeRequest, token, questionResponse.id());
 
-        ResponseDTO responseDTO = ResponseRequestUtil.post(userResponse.uuid(),questionResponse.id(), alternativeResponse.id(), token);
+        Long responseId = ResponseRequestUtil.post(userResponse.uuid(), questionResponse.id(), alternativeResponse.id(), token);
 
         given()
                 .header("Authorization", "Bearer " + anotherUserToken)
                 .when()
-                .delete(baseURI+":"+port+basePath+BASE_PATH_RESPONSE+"/"+responseDTO.id())
+                .delete(baseURI+":"+port+basePath+BASE_PATH_RESPONSE+"/"+responseId)
                 .then()
                 .statusCode(403)
                 .extract()

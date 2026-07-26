@@ -58,6 +58,10 @@ public class Response implements Serializable {
                 gameMode);
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public LocalDateTime getDateTime() {
         return dateTime;
     }

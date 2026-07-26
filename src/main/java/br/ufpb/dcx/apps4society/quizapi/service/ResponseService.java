@@ -49,7 +49,7 @@ public class ResponseService {
         this.tokenProvider = tokenProvider;
     }
 
-    public ResponseDTO insertResponse(UUID userId, Long idQuestion, Long idAlternative){
+    public Long insertResponse(UUID userId, Long idQuestion, Long idAlternative){
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
 
@@ -59,12 +59,11 @@ public class ResponseService {
         Alternative alternative = alternativeRepository.findById(idAlternative)
                 .orElseThrow(() -> new AlternativeNotFoundException("Alternativa não encontrada"));
 
-        Response response = new Response(user,question,alternative);
+        Response response = new Response(user, question, alternative);
         user.addResponse(response);
 
         responseRepository.save(response);
-
-        return response.entityToResponse();
+        return response.getId();
     }
 
     // Salva em lote as respostas do modo multiplayer todos-contra-todos, de uma

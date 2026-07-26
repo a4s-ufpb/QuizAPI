@@ -41,18 +41,16 @@ public class ResponseController {
     }
 
     @Operation(tags = "Response", summary = "Insert Response", responses ={
-            @ApiResponse(description = "Created", responseCode = "201", content = @Content()),
+            @ApiResponse(description = "Created", responseCode = "201", content = @Content(schema = @Schema(implementation = Long.class))),
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
             @ApiResponse(description = "Not Found", responseCode = "404", content = @Content()),
             @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
     } )
-    @PostMapping(value = "/{idUser}/{idQuestion}/{idAlternative}")
-    public ResponseEntity<Void> insertResponse(@PathVariable UUID idUser,
+    @PostMapping(value = "/{idUser}/{idQuestion}/{idAlternative}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Long> insertResponse(@PathVariable UUID idUser,
                                                @PathVariable Long idQuestion,
                                                @PathVariable Long idAlternative){
-        // Front só precisa saber que salvou; body inflava a rede sem uso.
-        service.insertResponse(idUser, idQuestion, idAlternative);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.insertResponse(idUser, idQuestion, idAlternative));
     }
 
     @Operation(tags = "Response", summary = "Insert Multiplayer Responses in Batch (todos-contra-todos, usuário logado)", responses ={
