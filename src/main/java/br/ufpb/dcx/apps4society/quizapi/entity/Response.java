@@ -5,7 +5,6 @@ import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 @Entity(name = "tb_response")
@@ -18,7 +17,7 @@ public class Response implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private LocalDate dateTime = LocalDate.now();
+    private LocalDateTime dateTime = LocalDateTime.now();
     @ManyToOne(cascade = CascadeType.PERSIST)
     private User user;
     @ManyToOne(cascade = CascadeType.PERSIST)
@@ -59,7 +58,7 @@ public class Response implements Serializable {
                 gameMode);
     }
 
-    public LocalDate getDateTime() {
+    public LocalDateTime getDateTime() {
         return dateTime;
     }
 

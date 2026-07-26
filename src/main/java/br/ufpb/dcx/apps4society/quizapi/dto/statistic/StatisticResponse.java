@@ -1,8 +1,9 @@
 package br.ufpb.dcx.apps4society.quizapi.dto.statistic;
 
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record StatisticResponse(
@@ -12,7 +13,8 @@ public record StatisticResponse(
          String studentName,
          String themeName,
          Double percentagemOfHits,
-         @JsonFormat(pattern = "dd/MM/yyyy")
-         LocalDate date
+         @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+         LocalDateTime date,
+         GameMode gameMode
 ) {
 }

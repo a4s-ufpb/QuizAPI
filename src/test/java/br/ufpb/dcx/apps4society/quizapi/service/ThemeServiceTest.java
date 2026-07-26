@@ -9,6 +9,8 @@ import br.ufpb.dcx.apps4society.quizapi.entity.Question;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
 import br.ufpb.dcx.apps4society.quizapi.entity.User;
 import br.ufpb.dcx.apps4society.quizapi.mock.MockUser;
+import br.ufpb.dcx.apps4society.quizapi.repository.TagRepository;
+import br.ufpb.dcx.apps4society.quizapi.repository.ThemeLikeRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeAlreadyExistsException;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.ThemeNotFoundException;
@@ -44,6 +46,10 @@ class ThemeServiceTest {
     UserService userService;
     @Mock
     ImageStorageService imageStorageService;
+    @Mock
+    TagRepository tagRepository;
+    @Mock
+    ThemeLikeRepository themeLikeRepository;
     @InjectMocks
     ThemeService themeService;
 
@@ -54,6 +60,9 @@ class ThemeServiceTest {
         mockUser = new MockUser();
         mockQuestion = new MockQuestion();
         lenient().when(imageStorageService.upload(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+        // count usado por toResponse — default 0 evita NPE.
+        lenient().when(themeLikeRepository.countByTheme_Id(anyLong())).thenReturn(0L);
+        lenient().when(themeLikeRepository.existsByUser_UuidAndTheme_Id(any(), anyLong())).thenReturn(false);
     }
 
     @Test
@@ -156,7 +165,7 @@ class ThemeServiceTest {
         Page<Theme> themePage = new PageImpl<>(themeList);
         Mockito.lenient().when(repository.findAll(pageable)).thenReturn(themePage);
 
-        Assertions.assertDoesNotThrow(() -> themeService.findAllThemes(pageable, ""));
+        Assertions.assertDoesNotThrow(() -> themeService.findAllThemes(pageable, "", null, null));
         assertEquals(1, themePage.getNumberOfElements());
 
         verify(repository, times(1)).findAll(pageable);
@@ -171,7 +180,7 @@ class ThemeServiceTest {
         Mockito.lenient().when(repository.findAll(pageable)).thenReturn(themePage);
 
         Exception e = assertThrows(ThemeNotFoundException.class, () ->{
-            themeService.findAllThemes(pageable, "");
+            themeService.findAllThemes(pageable, "", null, null);
         });
 
         assertEquals(0, themePage.getNumberOfElements());
@@ -252,5 +261,45 @@ class ThemeServiceTest {
         });
 
         assertEquals(e.getMessage(), Messages.USER_NOT_HAVE_PERMISSION_FOR_UPDATE_THEME);
+    }
+
+    @Test
+    void likeTheme_firstTime_savesThemeLike() {
+        User user = mockUser.mockEntity(1);
+        Theme theme = mockTheme.mockEntity(1, user);
+        Mockito.lenient().when(userService.findUserByToken(MockUser.MOCK_TOKEN)).thenReturn(user);
+        Mockito.lenient().when(repository.findById(theme.getId())).thenReturn(Optional.of(theme));
+        Mockito.lenient().when(themeLikeRepository.existsByUser_UuidAndTheme_Id(user.getUuid(), theme.getId())).thenReturn(false);
+
+        themeService.likeTheme(theme.getId(), MockUser.MOCK_TOKEN);
+
+        verify(themeLikeRepository, times(1)).save(Mockito.any());
+    }
+
+    @Test
+    void likeTheme_alreadyLiked_doesNotSaveAgain() {
+        User user = mockUser.mockEntity(1);
+        Theme theme = mockTheme.mockEntity(1, user);
+        Mockito.lenient().when(userService.findUserByToken(MockUser.MOCK_TOKEN)).thenReturn(user);
+        Mockito.lenient().when(repository.findById(theme.getId())).thenReturn(Optional.of(theme));
+        Mockito.lenient().when(themeLikeRepository.existsByUser_UuidAndTheme_Id(user.getUuid(), theme.getId())).thenReturn(true);
+
+        themeService.likeTheme(theme.getId(), MockUser.MOCK_TOKEN);
+
+        verify(themeLikeRepository, never()).save(Mockito.any());
+    }
+
+    @Test
+    void findAllThemes_withTagIds_usesTagFilterQuery() {
+        Pageable pageable = mock(Pageable.class);
+        Theme theme = mockTheme.mockEntity(1);
+        Page<Theme> themePage = new PageImpl<>(List.of(theme));
+        Mockito.lenient().when(repository.findByTagIds(Mockito.eq(List.of(1L, 2L)), Mockito.anyString(), Mockito.eq(pageable)))
+                .thenReturn(themePage);
+
+        themeService.findAllThemes(pageable, "", List.of(1L, 2L), null);
+
+        verify(repository, times(1)).findByTagIds(Mockito.eq(List.of(1L, 2L)), Mockito.anyString(), Mockito.eq(pageable));
+        verify(repository, never()).findAll(pageable);
     }
 }

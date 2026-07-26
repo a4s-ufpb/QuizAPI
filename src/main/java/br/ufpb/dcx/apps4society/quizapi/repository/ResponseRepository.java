@@ -10,64 +10,70 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 public interface ResponseRepository extends JpaRepository<Response,Long> {
     Page<Response> findByUser(Pageable pageable, User user);
 
-    // Respostas do próprio usuário (como jogador), com filtros opcionais de tema, intervalo de datas e modo de jogo
+    // Respostas do próprio usuário (como jogador), com filtros opcionais de tema,
+    // intervalo de datas e modo de jogo.
+    //
+    // Datas: `r.dateTime` é LocalDateTime; o service converte o filtro (LocalDate)
+    // em [startDateTime, endDateTimeExclusive) e usa sentinelas quando ausente
+    // — parâmetro null de data faz o driver Postgres não inferir o tipo.
     @Query("SELECT r FROM tb_response r WHERE r.user = :user " +
-            "AND r.gameMode = :gameMode " +
+            "AND (:gameMode IS NULL OR r.gameMode = :gameMode) " +
             "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
-            "AND (cast(:startDate as date) IS NULL OR r.dateTime >= :startDate) " +
-            "AND (cast(:endDate as date) IS NULL OR r.dateTime <= :endDate)")
+            "AND r.dateTime >= :startDateTime " +
+            "AND r.dateTime < :endDateTimeExclusive")
     Page<Response> findByUserAndFilters(Pageable pageable, @Param("user") User user,
                                          @Param("themeName") String themeName,
-                                         @Param("startDate") LocalDate startDate,
-                                         @Param("endDate") LocalDate endDate,
+                                         @Param("startDateTime") LocalDateTime startDateTime,
+                                         @Param("endDateTimeExclusive") LocalDateTime endDateTimeExclusive,
                                          @Param("gameMode") GameMode gameMode);
 
     @Query("SELECT COUNT(r) FROM tb_response r WHERE r.user = :user AND r.alternative.correct = :correct " +
-            "AND r.gameMode = :gameMode " +
+            "AND (:gameMode IS NULL OR r.gameMode = :gameMode) " +
             "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
-            "AND (cast(:startDate as date) IS NULL OR r.dateTime >= :startDate) " +
-            "AND (cast(:endDate as date) IS NULL OR r.dateTime <= :endDate)")
+            "AND r.dateTime >= :startDateTime " +
+            "AND r.dateTime < :endDateTimeExclusive")
     long countByUserAndCorrectAndFilters(@Param("user") User user, @Param("correct") boolean correct,
                                           @Param("themeName") String themeName,
-                                          @Param("startDate") LocalDate startDate,
-                                          @Param("endDate") LocalDate endDate,
+                                          @Param("startDateTime") LocalDateTime startDateTime,
+                                          @Param("endDateTimeExclusive") LocalDateTime endDateTimeExclusive,
                                           @Param("gameMode") GameMode gameMode);
     Page<Response> findByQuestionCreator(Pageable pageable, User creator);
     Page<Response> findByQuestionCreatorAndGameMode(Pageable pageable, User creator, GameMode gameMode);
     List<Response> findByQuestionCreatorUuid(UUID creatorId);
 
-    // Painel de respostas do criador: todos os filtros opcionais numa única query
-    @Query("SELECT r FROM tb_response r WHERE r.gameMode = :gameMode " +
+    // Painel de respostas do criador: todos os filtros opcionais numa única query.
+    // gameMode == null significa "todos os modos".
+    @Query("SELECT r FROM tb_response r WHERE (:gameMode IS NULL OR r.gameMode = :gameMode) " +
             "AND r.question.creator.uuid = :creatorUuid " +
             "AND (:name = '' OR r.user.name = :name) " +
             "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
-            "AND (cast(:currentDate as date) IS NULL OR r.dateTime >= :currentDate) " +
-            "AND (cast(:finalDate as date) IS NULL OR r.dateTime <= :finalDate)")
+            "AND r.dateTime >= :startDateTime " +
+            "AND r.dateTime < :endDateTimeExclusive")
     Page<Response> findByCreatorAndFilters(Pageable pageable,
                                            @Param("creatorUuid") UUID creatorUuid,
                                            @Param("name") String name,
                                            @Param("themeName") String themeName,
-                                           @Param("currentDate") LocalDate currentDate,
-                                           @Param("finalDate") LocalDate finalDate,
+                                           @Param("startDateTime") LocalDateTime startDateTime,
+                                           @Param("endDateTimeExclusive") LocalDateTime endDateTimeExclusive,
                                            @Param("gameMode") GameMode gameMode);
 
-    // Mesma busca sem restrição de criador — usada pelo ADMIN, que enxerga todas as respostas
-    @Query("SELECT r FROM tb_response r WHERE r.gameMode = :gameMode " +
+    @Query("SELECT r FROM tb_response r WHERE (:gameMode IS NULL OR r.gameMode = :gameMode) " +
             "AND (:name = '' OR r.user.name = :name) " +
             "AND (:themeName = '' OR r.question.theme.name = :themeName) " +
-            "AND (cast(:currentDate as date) IS NULL OR r.dateTime >= :currentDate) " +
-            "AND (cast(:finalDate as date) IS NULL OR r.dateTime <= :finalDate)")
+            "AND r.dateTime >= :startDateTime " +
+            "AND r.dateTime < :endDateTimeExclusive")
     Page<Response> findByFiltersForAdmin(Pageable pageable,
                                          @Param("name") String name,
                                          @Param("themeName") String themeName,
-                                         @Param("currentDate") LocalDate currentDate,
-                                         @Param("finalDate") LocalDate finalDate,
+                                         @Param("startDateTime") LocalDateTime startDateTime,
+                                         @Param("endDateTimeExclusive") LocalDateTime endDateTimeExclusive,
                                          @Param("gameMode") GameMode gameMode);
 
     // Busca por intervalo de datas

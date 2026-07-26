@@ -6,6 +6,7 @@ import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StudentName;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.ThemeName;
 import br.ufpb.dcx.apps4society.quizapi.entity.StatisticPerConclusion;
 import br.ufpb.dcx.apps4society.quizapi.entity.Theme;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import br.ufpb.dcx.apps4society.quizapi.entity.enums.Role;
 import br.ufpb.dcx.apps4society.quizapi.repository.StatisticRepository;
 import br.ufpb.dcx.apps4society.quizapi.repository.ThemeRepository;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -35,7 +37,6 @@ public class StatisticService {
         return statisticRepository.findById(id).orElse(null);
     }
 
-    /** ADMIN enxerga estatísticas (e listas de filtros) de todos os criadores. */
     private boolean isAdmin(UUID userId) {
         return userRepository.findById(userId)
                 .map(user -> user.getRole() == Role.ADMIN)
@@ -63,17 +64,39 @@ public class StatisticService {
         return statistic.entityToResponse();
     }
 
-    public Page<StatisticResponse> findAllStatisticsByCreator(Pageable pageable, UUID creatorId, String studentName, String themeName, LocalDate startDate, LocalDate endDate) {
-        // ADMIN enxerga as estatísticas de todos os criadores.
+    /**
+     * Sentinelas para o filtro de datas: quando não informadas, usamos limites
+     * extremos em vez de null porque o driver Postgres não infere o tipo de
+     * parâmetro null (envia como bytea e falha ao comparar com timestamp).
+     */
+    static final LocalDateTime MIN_DATE_TIME = LocalDateTime.of(1900, 1, 1, 0, 0);
+    static final LocalDateTime MAX_DATE_TIME = LocalDateTime.of(9999, 12, 31, 0, 0);
+
+    /** Início do dia informado (ou sentinela mínima quando não filtrado). */
+    static LocalDateTime startOfDayOrMin(LocalDate startDate) {
+        return startDate == null ? MIN_DATE_TIME : startDate.atStartOfDay();
+    }
+
+    /**
+     * endDate é inclusivo: devolve o início do dia seguinte, para a comparação
+     * `< endDateTimeExclusive` cobrir todas as horas do dia informado.
+     */
+    static LocalDateTime endOfDayExclusiveOrMax(LocalDate endDate) {
+        return endDate == null ? MAX_DATE_TIME : endDate.plusDays(1).atStartOfDay();
+    }
+
+    public Page<StatisticResponse> findAllStatisticsByCreator(Pageable pageable, UUID creatorId, String studentName, String themeName, LocalDate startDate, LocalDate endDate, GameMode gameMode) {
+        LocalDateTime start = startOfDayOrMin(startDate);
+        LocalDateTime endExclusive = endOfDayExclusiveOrMax(endDate);
         Page<StatisticPerConclusion> statistic = isAdmin(creatorId)
-                ? statisticRepository.findByFiltersForAdmin(pageable, studentName, themeName, startDate, endDate)
-                : statisticRepository.findByCreatorIdAndFilters(pageable, creatorId, studentName, themeName, startDate, endDate);
+                ? statisticRepository.findByFiltersForAdmin(pageable, studentName, themeName, start, endExclusive, gameMode)
+                : statisticRepository.findByCreatorIdAndFilters(pageable, creatorId, studentName, themeName, start, endExclusive, gameMode);
 
         return statistic.map(StatisticPerConclusion::entityToResponse);
     }
 
-    public List<StatisticResponse> findAllStatisticsByCreatorForChart(UUID creatorId, String studentName, String themeName, LocalDate startDate, LocalDate endDate) {
-        return findAllStatisticsByCreator(Pageable.unpaged(), creatorId, studentName, themeName, startDate, endDate).getContent();
+    public List<StatisticResponse> findAllStatisticsByCreatorForChart(UUID creatorId, String studentName, String themeName, LocalDate startDate, LocalDate endDate, GameMode gameMode) {
+        return findAllStatisticsByCreator(Pageable.unpaged(), creatorId, studentName, themeName, startDate, endDate, gameMode).getContent();
     }
 
     public List<StudentName> findDistinctStudentNameByCreatorId(UUID creatorId) {
@@ -105,6 +128,4 @@ public class StatisticService {
                 .sorted(Comparator.comparing(theme -> theme.themeName().toLowerCase()))
                 .toList();
     }
-
-
 }

@@ -4,6 +4,7 @@ import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticResponse;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StudentName;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.ThemeName;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import br.ufpb.dcx.apps4society.quizapi.service.StatisticService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -58,10 +59,10 @@ public class StatisticController {
                                                                              @RequestParam(value = "themeName", defaultValue = "") String themeName,
                                                                              @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
                                                                              @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
+                                                                             @RequestParam(value = "gameMode", required = false) GameMode gameMode,
                                                                              @PathVariable UUID creatorId) {
-        // Ordena da conclusão mais recente para a mais antiga por padrão.
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date", "id"));
-        return ResponseEntity.ok(statisticService.findAllStatisticsByCreator(pageable, creatorId, studentName, themeName, startDate, endDate));
+        return ResponseEntity.ok(statisticService.findAllStatisticsByCreator(pageable, creatorId, studentName, themeName, startDate, endDate, gameMode));
     }
 
     @Operation(tags = "Statistic", summary = "Find All Statistics By Creator Without Pagination (for charts)", responses ={
@@ -75,8 +76,9 @@ public class StatisticController {
                                                                                       @RequestParam(value = "themeName", defaultValue = "") String themeName,
                                                                                       @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
                                                                                       @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
+                                                                                      @RequestParam(value = "gameMode", required = false) GameMode gameMode,
                                                                                       @PathVariable UUID creatorId) {
-        return ResponseEntity.ok(statisticService.findAllStatisticsByCreatorForChart(creatorId, studentName, themeName, startDate, endDate));
+        return ResponseEntity.ok(statisticService.findAllStatisticsByCreatorForChart(creatorId, studentName, themeName, startDate, endDate, gameMode));
     }
 
     @Operation(tags = "Statistic", summary = "Find Distinct Theme Names By Creator", responses ={

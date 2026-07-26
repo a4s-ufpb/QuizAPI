@@ -6,14 +6,13 @@ import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import br.ufpb.dcx.apps4society.quizapi.dto.alternative.AlternativeResponse;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record ResponseDTO(
         Long id,
-        @JsonFormat(pattern = "dd/MM/yyyy")
-        LocalDate dateTime,
+        @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+        LocalDateTime dateTime,
         UserResponse user,
         QuestionMinResponse question,
         AlternativeResponse alternative,

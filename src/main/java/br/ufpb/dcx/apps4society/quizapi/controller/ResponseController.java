@@ -76,7 +76,7 @@ public class ResponseController {
                                                               @RequestParam(value = "theme", defaultValue = "") String theme,
                                                               @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
                                                               @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
-                                                              @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode,
+                                                              @RequestParam(value = "gameMode", required = false) GameMode gameMode,
                                                               @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
         return ResponseEntity.ok(service.findMyResponses(pageable, token, theme, startDate, endDate, gameMode));
@@ -91,7 +91,7 @@ public class ResponseController {
     public ResponseEntity<MySummaryDTO> findMySummary(@RequestParam(value = "theme", defaultValue = "") String theme,
                                                         @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
                                                         @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
-                                                        @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode,
+                                                        @RequestParam(value = "gameMode", required = false) GameMode gameMode,
                                                         @RequestHeader("Authorization") String token){
         return ResponseEntity.ok(service.findMySummary(token, theme, startDate, endDate, gameMode));
     }
@@ -123,7 +123,7 @@ public class ResponseController {
                                                                            @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
                                                                            @RequestParam(value = "username", defaultValue = "") String username,
                                                                            @RequestParam(value = "theme", defaultValue = "") String theme,
-                                                                           @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode,
+                                                                           @RequestParam(value = "gameMode", required = false) GameMode gameMode,
                                                                            @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
         return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeName(pageable, token, username, theme, currentDate, finalDate, gameMode));
@@ -139,7 +139,7 @@ public class ResponseController {
                                                                                     @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
                                                                                     @RequestParam(value = "username", defaultValue = "") String username,
                                                                                     @RequestParam(value = "theme", defaultValue = "") String theme,
-                                                                                    @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode,
+                                                                                    @RequestParam(value = "gameMode", required = false) GameMode gameMode,
                                                                                     @RequestHeader("Authorization") String token){
         return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeNameForChart(token, username, theme, currentDate, finalDate, gameMode));
     }
@@ -154,7 +154,7 @@ public class ResponseController {
     public ResponseEntity<List<ResponseStatisticDTO>> findResponsesStatistics(@RequestHeader("Authorization") String token,
                                                                               @PathVariable String themeName,
                                                                               @PathVariable UUID userId,
-                                                                              @RequestParam(value = "gameMode", defaultValue = "SINGLE_PLAYER") GameMode gameMode){
+                                                                              @RequestParam(value = "gameMode", required = false) GameMode gameMode){
         return ResponseEntity.ok(service.findStatisticResponse(token,themeName, userId, gameMode));
     }
 

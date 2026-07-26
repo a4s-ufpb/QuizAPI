@@ -2,12 +2,10 @@ package br.ufpb.dcx.apps4society.quizapi.entity;
 
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticRequest;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StatisticResponse;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
+import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity(name = "tb_statistic")
@@ -20,7 +18,11 @@ public class StatisticPerConclusion {
     private String studentName;
     private String themeName;
     private Double percentagemOfHits;
-    private LocalDate date = LocalDate.now();
+    private LocalDateTime date = LocalDateTime.now();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "game_mode", nullable = false)
+    private GameMode gameMode = GameMode.SINGLE_PLAYER;
 
     public StatisticPerConclusion() {
     }
@@ -35,10 +37,11 @@ public class StatisticPerConclusion {
         this.studentName = statisticRequest.studentName();
         this.themeName = statisticRequest.themeName();
         this.percentagemOfHits = statisticRequest.percentagemOfHits();
+        if (statisticRequest.gameMode() != null) this.gameMode = statisticRequest.gameMode();
     }
 
     public StatisticResponse entityToResponse() {
-        return new StatisticResponse(id, creatorId, studentUuid, studentName, themeName, percentagemOfHits, date);
+        return new StatisticResponse(id, creatorId, studentUuid, studentName, themeName, percentagemOfHits, date, gameMode);
     }
 
     public Long getId() {
@@ -73,11 +76,11 @@ public class StatisticPerConclusion {
         this.percentagemOfHits = percentagemOfHits;
     }
 
-    public LocalDate getDate() {
+    public LocalDateTime getDate() {
         return date;
     }
 
-    public void setDate(LocalDate date) {
+    public void setDate(LocalDateTime date) {
         this.date = date;
     }
 
@@ -91,4 +94,7 @@ public class StatisticPerConclusion {
 
     public UUID getStudentUuid() { return studentUuid; }
     public void setStudentUuid(UUID studentUuid) { this.studentUuid = studentUuid; }
+
+    public GameMode getGameMode() { return gameMode; }
+    public void setGameMode(GameMode gameMode) { this.gameMode = gameMode; }
 }

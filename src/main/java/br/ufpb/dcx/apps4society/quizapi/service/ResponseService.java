@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -112,23 +113,39 @@ public class ResponseService {
         return responses.map(Response::entityToResponse);
     }
 
+    /**
+     * Conversão do filtro de datas (LocalDate) para o intervalo semiaberto
+     * [início do dia, início do dia seguinte) sobre os campos LocalDateTime.
+     * Sentinelas no lugar de null: o driver Postgres não infere o tipo de um
+     * parâmetro de data nulo (envia como bytea e falha ao comparar).
+     */
+    private LocalDateTime startOrMin(LocalDate startDate) {
+        return StatisticService.startOfDayOrMin(startDate);
+    }
+
+    private LocalDateTime endExclusiveOrMax(LocalDate endDate) {
+        return StatisticService.endOfDayExclusiveOrMax(endDate);
+    }
+
     public Page<ResponseDTO> findMyResponses(Pageable pageable, String token, String themeName,
                                               LocalDate startDate, LocalDate endDate, GameMode gameMode){
         User loggedUser = findUserByToken(token);
         Page<Response> responses = responseRepository.findByUserAndFilters(
-                pageable, loggedUser, themeName, startDate, endDate, gameMode);
+                pageable, loggedUser, themeName, startOrMin(startDate), endExclusiveOrMax(endDate), gameMode);
         return responses.map(Response::entityToResponse);
     }
 
     public MySummaryDTO findMySummary(String token, String themeName, LocalDate startDate, LocalDate endDate, GameMode gameMode){
         User loggedUser = findUserByToken(token);
+        LocalDateTime start = startOrMin(startDate);
+        LocalDateTime endExclusive = endExclusiveOrMax(endDate);
 
         long totalCorrect = responseRepository.countByUserAndCorrectAndFilters(
-                loggedUser, true, themeName, startDate, endDate, gameMode);
+                loggedUser, true, themeName, start, endExclusive, gameMode);
         long totalWrong = responseRepository.countByUserAndCorrectAndFilters(
-                loggedUser, false, themeName, startDate, endDate, gameMode);
+                loggedUser, false, themeName, start, endExclusive, gameMode);
         long totalQuizzesFinished = statisticRepository.countByStudentNameAndFilters(
-                loggedUser.getName(), themeName, startDate, endDate);
+                loggedUser.getName(), themeName, start, endExclusive, gameMode);
 
         return new MySummaryDTO(totalQuizzesFinished, totalCorrect, totalWrong);
     }
@@ -151,9 +168,11 @@ public class ResponseService {
 
         // ADMIN enxerga as respostas de todas as questões (igual à tela de
         // estatísticas por questão); os demais só as das próprias questões.
+        LocalDateTime start = startOrMin(currentDate);
+        LocalDateTime endExclusive = endExclusiveOrMax(finalDate);
         Page<Response> responses = loggedUser.getRole() == Role.ADMIN
-                ? responseRepository.findByFiltersForAdmin(pageable, name, themeName, currentDate, finalDate, gameMode)
-                : responseRepository.findByCreatorAndFilters(pageable, loggedUser.getUuid(), name, themeName, currentDate, finalDate, gameMode);
+                ? responseRepository.findByFiltersForAdmin(pageable, name, themeName, start, endExclusive, gameMode)
+                : responseRepository.findByCreatorAndFilters(pageable, loggedUser.getUuid(), name, themeName, start, endExclusive, gameMode);
 
         if (responses.isEmpty()) {
             throw new ResponseNotFoundException("Nenhuma resposta cadastrada!");
@@ -181,7 +200,12 @@ public class ResponseService {
 
         List<Response> responses;
 
-        if (loggedUser.userNotHavePermission(user)){
+        boolean restrictToCreator = loggedUser.userNotHavePermission(user);
+        if (gameMode == null) {
+            responses = restrictToCreator
+                    ? responseRepository.findByQuestionCreatorAndQuestionThemeName(loggedUser, themeName)
+                    : responseRepository.findByQuestionThemeName(themeName);
+        } else if (restrictToCreator) {
             responses = responseRepository.findByQuestionCreatorAndQuestionThemeNameAndGameMode(loggedUser, themeName, gameMode);
         } else {
             responses = responseRepository.findByQuestionThemeNameAndGameMode(themeName, gameMode);
