@@ -33,7 +33,11 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
 
+      # DOCKER_API_VERSION força o docker-java (Testcontainers) a pular a
+      # negociação automática de versão da API do Docker — ver dev.yaml.
       - name: Build and test
+        env:
+          DOCKER_API_VERSION: "1.41"
         run: mvn -B verify
 
       - name: Login to Docker Hub
