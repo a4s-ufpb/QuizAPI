@@ -31,15 +31,7 @@ jobs:
 
       # `verify` compila, roda os testes (falha o build se algum quebrar) e
       # empacota o artefato — validação de pacote e testes em um passo só.
-      #
-      # DOCKER_API_VERSION força o docker-java (usado pelo Testcontainers nos
-      # testes de integração) a pular a negociação automática de versão da
-      # API do Docker: sem isso ele cai num fallback antigo (1.32) que o
-      # daemon do runner atual rejeita ("client version 1.32 is too old.
-      # Minimum supported API version is 1.40").
       - name: Build, test and package
-        env:
-          DOCKER_API_VERSION: "1.41"
         run: mvn -B verify
 
       - name: Upload test reports

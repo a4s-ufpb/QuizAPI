@@ -22,7 +22,7 @@
 		     docker-java negocia a API do Docker em 1.32 por padrão — runners
 		     atuais do GitHub Actions têm um daemon que exige >= 1.40 e rejeita
 		     essa versão ("client version 1.32 is too old"). -->
-		<testcontainers.version>1.20.4</testcontainers.version>
+		<testcontainers.version>1.21.3</testcontainers.version>
 	</properties>
 
 	<dependencies>
