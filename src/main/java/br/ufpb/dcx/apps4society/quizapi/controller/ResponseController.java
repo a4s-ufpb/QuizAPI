@@ -9,6 +9,8 @@ import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import br.ufpb.dcx.apps4society.quizapi.service.ResponseService;
 import br.ufpb.dcx.apps4society.quizapi.dto.response.ResponseDTO;
 import br.ufpb.dcx.apps4society.quizapi.service.exception.UserNotHavePermissionException;
+import br.ufpb.dcx.apps4society.quizapi.service.export.ExportFormat;
+import br.ufpb.dcx.apps4society.quizapi.service.export.ExportTable;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,10 +36,12 @@ import java.util.UUID;
 @Tag(name = "Response", description = "Responses of Users")
 public class ResponseController {
     private ResponseService service;
+    private ExportResponseHelper exportHelper;
 
     @Autowired
-    public ResponseController(ResponseService service) {
+    public ResponseController(ResponseService service, ExportResponseHelper exportHelper) {
         this.service = service;
+        this.exportHelper = exportHelper;
     }
 
     @Operation(tags = "Response", summary = "Insert Response", responses ={
@@ -80,6 +84,23 @@ public class ResponseController {
                                                               @RequestHeader("Authorization") String token){
         Pageable pageable = PageRequest.of(page,size);
         return ResponseEntity.ok(service.findMyResponses(pageable, token, theme, startDate, endDate, gameMode));
+    }
+
+    @Operation(tags = "Response", summary = "Export My Responses (PDF/Excel)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/user/export")
+    public ResponseEntity<byte[]> exportMyResponses(@RequestParam(value = "theme", defaultValue = "") String theme,
+                                                      @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
+                                                      @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
+                                                      @RequestParam(value = "gameMode", required = false) GameMode gameMode,
+                                                      @RequestParam(value = "format") ExportFormat format,
+                                                      @RequestHeader("Authorization") String token){
+        List<ResponseDTO> responses = service.findMyResponses(Pageable.unpaged(), token, theme, startDate, endDate, gameMode).getContent();
+        ExportTable table = exportHelper.buildMyResponsesTable(responses);
+        return exportHelper.build(format, "minhas_respostas", table);
     }
 
     @Operation(tags = "Response", summary = "Find My Response Summary (quizzes finished / correct / wrong)", responses ={
@@ -129,6 +150,24 @@ public class ResponseController {
         return ResponseEntity.ok(service.findResponsesByUserNameOrDateOrThemeName(pageable, token, username, theme, currentDate, finalDate, gameMode));
     }
 
+    @Operation(tags = "Response", summary = "Export Responses by Username or/and Date (PDF/Excel)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/query/export")
+    public ResponseEntity<byte[]> exportResponsesByUsernameOrDate(@RequestParam(value = "currentDate", defaultValue = "") LocalDate currentDate,
+                                                                     @RequestParam(value = "finalDate", defaultValue = "") LocalDate finalDate,
+                                                                     @RequestParam(value = "username", defaultValue = "") String username,
+                                                                     @RequestParam(value = "theme", defaultValue = "") String theme,
+                                                                     @RequestParam(value = "gameMode", required = false) GameMode gameMode,
+                                                                     @RequestParam(value = "format") ExportFormat format,
+                                                                     @RequestHeader("Authorization") String token){
+        List<ResponseDTO> responses = service.findResponsesByUserNameOrDateOrThemeNameForChart(token, username, theme, currentDate, finalDate, gameMode);
+        ExportTable table = exportHelper.buildResponsesPanelTable(responses);
+        return exportHelper.build(format, "painel_de_respostas", table);
+    }
+
     @Operation(tags = "Response", summary = "Find Responses by Username or/and Date Without Pagination (for charts)", responses ={
             @ApiResponse(description = "Success", responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseDTO.class)))),
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
@@ -156,6 +195,22 @@ public class ResponseController {
                                                                               @PathVariable UUID userId,
                                                                               @RequestParam(value = "gameMode", required = false) GameMode gameMode){
         return ResponseEntity.ok(service.findStatisticResponse(token,themeName, userId, gameMode));
+    }
+
+    @Operation(tags = "Response", summary = "Export Responses Statistics (PDF/Excel)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+            @ApiResponse(description = "Unauthorized", responseCode = "403", content = @Content())
+    } )
+    @GetMapping(value = "/statistic/{themeName}/{userId}/export")
+    public ResponseEntity<byte[]> exportResponsesStatistics(@RequestHeader("Authorization") String token,
+                                                               @PathVariable String themeName,
+                                                               @PathVariable UUID userId,
+                                                               @RequestParam(value = "gameMode", required = false) GameMode gameMode,
+                                                               @RequestParam(value = "format") ExportFormat format){
+        List<ResponseStatisticDTO> statistics = service.findStatisticResponse(token, themeName, userId, gameMode);
+        ExportTable table = exportHelper.buildStatisticPerQuestionTable(statistics);
+        return exportHelper.build(format, "estatisticas_por_questao", table);
     }
 
     @Operation(tags = "Response", summary = "Remove Response", responses ={

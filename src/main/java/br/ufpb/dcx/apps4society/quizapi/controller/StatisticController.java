@@ -6,6 +6,8 @@ import br.ufpb.dcx.apps4society.quizapi.dto.statistic.StudentName;
 import br.ufpb.dcx.apps4society.quizapi.dto.statistic.ThemeName;
 import br.ufpb.dcx.apps4society.quizapi.entity.enums.GameMode;
 import br.ufpb.dcx.apps4society.quizapi.service.StatisticService;
+import br.ufpb.dcx.apps4society.quizapi.service.export.ExportFormat;
+import br.ufpb.dcx.apps4society.quizapi.service.export.ExportTable;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,9 +32,11 @@ import java.util.UUID;
 @Tag(name = "Statistic", description = "Statistics per conclusion")
 public class StatisticController {
     private final StatisticService statisticService;
+    private final ExportResponseHelper exportHelper;
 
-    public StatisticController(StatisticService statisticService) {
+    public StatisticController(StatisticService statisticService, ExportResponseHelper exportHelper) {
         this.statisticService = statisticService;
+        this.exportHelper = exportHelper;
     }
 
     @Operation(tags = "Statistic", summary = "Insert Statistic", responses ={
@@ -63,6 +67,23 @@ public class StatisticController {
                                                                              @PathVariable UUID creatorId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date", "id"));
         return ResponseEntity.ok(statisticService.findAllStatisticsByCreator(pageable, creatorId, studentName, themeName, startDate, endDate, gameMode));
+    }
+
+    @Operation(tags = "Statistic", summary = "Export Statistics By Creator (PDF/Excel)", responses ={
+            @ApiResponse(description = "Success", responseCode = "200", content = @Content()),
+            @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content()),
+    })
+    @GetMapping(value = "/{creatorId}/export")
+    public ResponseEntity<byte[]> exportAllStatisticByCreator(@RequestParam(value = "studentName", defaultValue = "") String studentName,
+                                                                 @RequestParam(value = "themeName", defaultValue = "") String themeName,
+                                                                 @RequestParam(value = "startDate", defaultValue = "") LocalDate startDate,
+                                                                 @RequestParam(value = "endDate", defaultValue = "") LocalDate endDate,
+                                                                 @RequestParam(value = "gameMode", required = false) GameMode gameMode,
+                                                                 @RequestParam(value = "format") ExportFormat format,
+                                                                 @PathVariable UUID creatorId) {
+        List<StatisticResponse> statistics = statisticService.findAllStatisticsByCreatorForChart(creatorId, studentName, themeName, startDate, endDate, gameMode);
+        ExportTable table = exportHelper.buildStatisticConclusionTable(statistics);
+        return exportHelper.build(format, "estatisticas_por_conclusao", table);
     }
 
     @Operation(tags = "Statistic", summary = "Find All Statistics By Creator Without Pagination (for charts)", responses ={
