@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -105,7 +104,7 @@ public class ExportResponseHelper {
         String filename = fileBaseName + "_" + LocalDateTime.now().format(FILE_TIMESTAMP) + "." + extension;
 
         ContentDisposition disposition = ContentDisposition.attachment()
-                .filename(filename, StandardCharsets.UTF_8)
+                .filename(filename)
                 .build();
 
         return ResponseEntity.ok()

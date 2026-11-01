@@ -21,6 +21,9 @@ import java.io.IOException;
 
 @Service
 public class ExportService {
+    private static final int COLUMN_PADDING_CHARS = 2;
+    private static final int MAX_COLUMN_WIDTH_CHARS = 80;
+    private static final int EXCEL_WIDTH_UNITS_PER_CHAR = 256;
 
     public byte[] generateXlsx(ExportTable table) {
         try (XSSFWorkbook workbook = new XSSFWorkbook();
@@ -47,8 +50,10 @@ public class ExportService {
                 }
             }
 
+            // autoSizeColumn mede texto via AWT, que exige fontconfig e fontes
+            // ausentes na imagem Alpine de produção.
             for (int i = 0; i < table.headers().size(); i++) {
-                sheet.autoSizeColumn(i);
+                sheet.setColumnWidth(i, columnWidth(table, i));
             }
 
             workbook.write(out);
@@ -56,6 +61,14 @@ public class ExportService {
         } catch (IOException e) {
             throw new ExportGenerationException("Erro ao gerar arquivo Excel", e);
         }
+    }
+
+    private int columnWidth(ExportTable table, int column) {
+        int longest = table.headers().get(column).length();
+        for (var row : table.rows()) {
+            longest = Math.max(longest, row.get(column).length());
+        }
+        return Math.min(longest + COLUMN_PADDING_CHARS, MAX_COLUMN_WIDTH_CHARS) * EXCEL_WIDTH_UNITS_PER_CHAR;
     }
 
     public byte[] generatePdf(ExportTable table) {
