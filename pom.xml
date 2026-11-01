@@ -18,6 +18,11 @@
 
 	<properties>
 		<java.version>21</java.version>
+		<!-- BOM do Spring Boot 3.2.3 fixa testcontainers em 1.19.5, cujo
+		     docker-java negocia a API do Docker em 1.32 por padrão — runners
+		     atuais do GitHub Actions têm um daemon que exige >= 1.40 e rejeita
+		     essa versão ("client version 1.32 is too old"). -->
+		<testcontainers.version>1.20.4</testcontainers.version>
 	</properties>
 
 	<dependencies>
